@@ -88,8 +88,13 @@
   .google-btn:hover{ transform:translateY(-3px); }
   .google-btn:active{ transform:translateY(0) scale(0.98); }
 
-  .theme-row{ display:flex; justify-content:flex-end; margin-bottom:-6px; }
-  .theme-toggle{ display:flex; align-items:center; gap:6px; background:var(--overlay-1); border:1px solid var(--panel-line); border-radius:999px; padding:6px 12px; cursor:pointer; font-size:0.72rem; font-weight:600; color:var(--ink-soft); }
+  .theme-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:-6px; gap:8px; }
+  .theme-toggle{ display:flex; align-items:center; gap:6px; background:var(--overlay-1); border:1px solid var(--panel-line); border-radius:999px; padding:6px 12px; cursor:pointer; font-size:0.72rem; font-weight:600; color:var(--ink-soft); flex-shrink:0; }
+
+  .tab-group{ display:flex; gap:6px; background:var(--overlay-1); border:1px solid var(--panel-line); border-radius:999px; padding:4px; }
+  .tab-btn{ border:none; background:none; cursor:pointer; font-weight:800; font-size:0.8rem; padding:7px 14px; border-radius:999px; color:var(--ink-dim); display:flex; align-items:center; gap:5px; transition:background .15s ease, color .15s ease; }
+  .tab-btn.selected.kimchi{ background:linear-gradient(135deg, var(--kimchi-1), var(--kimchi-2)); color:#fff; }
+  .tab-btn.selected.rice{ background:linear-gradient(135deg, var(--rice-1), var(--rice-2)); color:#fff; }
 
   .card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-lg); padding:22px 20px; box-shadow:var(--card-shadow); transition:background .25s ease; }
 
@@ -140,6 +145,47 @@
   .footer-actions{ display:flex; justify-content:center; margin-top:4px; }
   .link-btn{ background:none; border:none; cursor:pointer; font-size:0.72rem; color:var(--ink-dim); font-weight:600; padding:6px; }
   .link-btn.danger{ color:var(--danger); }
+
+  /* ---- 임계시간 설정 모달 ---- */
+  .modal-overlay{
+    display:flex; position:fixed; inset:0; background:rgba(20,14,9,0.55);
+    z-index:1000; align-items:center; justify-content:center; padding:20px;
+    visibility:hidden; opacity:0; pointer-events:none; transition:opacity .15s ease;
+  }
+  .modal-overlay.active{ visibility:visible; opacity:1; pointer-events:auto; }
+  .modal-card{ background:var(--panel); border-radius:22px; padding:22px 20px; max-width:320px; width:100%; box-shadow:var(--card-shadow); border:1px solid var(--panel-line); }
+  .modal-title{ font-weight:800; font-size:1.05rem; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .modal-row{ display:flex; gap:10px; align-items:flex-end; margin-bottom:10px; }
+  .modal-field{ flex:1; }
+  .modal-field label{ display:block; font-size:0.72rem; font-weight:700; color:var(--ink-soft); margin-bottom:5px; }
+  .modal-field input{ width:100%; border:1px solid var(--panel-line); border-radius:12px; padding:11px 12px; font-size:1rem; background:var(--overlay-input); color:var(--ink); text-align:center; font-variant-numeric:tabular-nums; }
+  .modal-preset-row{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 16px; }
+  .modal-preset{ border:1px solid var(--panel-line); background:var(--overlay-1); color:var(--ink-soft); border-radius:999px; padding:6px 12px; font-size:0.74rem; font-weight:700; cursor:pointer; }
+  .modal-preset.selected{ background:var(--kimchi-1); border-color:var(--kimchi-1); color:#fff; }
+  .modal-btns{ display:flex; gap:8px; }
+  .modal-btns button{ flex:1; border:none; border-radius:12px; padding:12px; font-weight:800; font-size:0.85rem; cursor:pointer; }
+  .modal-save{ background:var(--kimchi-1); color:#fff; }
+  .modal-cancel{ background:var(--overlay-2); color:var(--ink-soft); }
+
+  /* ---- 달력 ---- */
+  .cal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .nav-btn{ width:34px; height:34px; border-radius:12px; border:1px solid var(--panel-line); background:var(--overlay-1); color:var(--kimchi-1); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .cal-title{ font-weight:800; font-size:1.05rem; letter-spacing:-0.01em; }
+  .grid7{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .dow{ font-size:0.62rem; color:var(--ink-dim); font-weight:700; text-align:center; padding-bottom:4px; }
+  .day-cell{ aspect-ratio:1/1; border-radius:12px; background:var(--overlay-1); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:0.76rem; font-weight:700; color:var(--ink-soft); cursor:pointer; position:relative; border:1.5px solid transparent; }
+  .day-cell.empty{ visibility:hidden; cursor:default; }
+  .day-cell.is-today{ border-color:var(--rice-1); }
+  .day-cell.is-filtered{ border-color:var(--ink); background:var(--overlay-2); }
+  .day-cell.has-record.kimchi{ background:rgba(194,59,46,0.14); color:var(--kimchi-2); }
+  .day-cell.has-record.rice{ background:rgba(201,151,58,0.18); color:var(--rice-2); }
+  .day-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .day-dot.kimchi{ background:var(--kimchi-1); }
+  .day-dot.rice{ background:var(--rice-1); }
+  .cal-legend{ display:flex; justify-content:center; gap:16px; font-size:0.68rem; color:var(--ink-dim); margin-top:14px; padding-top:12px; border-top:1px solid var(--panel-line); }
+  .cal-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .filter-banner{ display:flex; align-items:center; justify-content:space-between; background:var(--overlay-1); border:1px solid var(--panel-line); border-radius:12px; padding:9px 12px; margin-bottom:12px; font-size:0.76rem; font-weight:700; }
+  .filter-banner button{ background:none; border:none; color:var(--kimchi-1); font-weight:800; cursor:pointer; font-size:0.72rem; }
 </style>
 </head>
 <body>
@@ -174,7 +220,11 @@
 
 <div class="wrap" id="appScreen" style="display:none;">
   <div class="theme-row">
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeLabel">다크 모드</span></button>
+    <div class="tab-group" id="tabGroup">
+      <button class="tab-btn" id="tabBtn-kimchi" onclick="switchTab('kimchi')">🥬 김치</button>
+      <button class="tab-btn" id="tabBtn-rice" onclick="switchTab('rice')">🍚 밥</button>
+    </div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeLabel">다크</span></button>
   </div>
 
   <div class="card">
@@ -186,8 +236,49 @@
 
   <div id="itemCardsRoot"></div>
 
+  <div class="card" id="filterBannerWrap" style="display:none;">
+    <div class="filter-banner">
+      <span id="filterBannerText"></span>
+      <button onclick="clearDateFilter()">전체보기</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cal-header">
+      <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-title" id="calTitle">달력 로딩중</div>
+      <button class="nav-btn" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="grid7" id="dowRow"></div>
+    <div class="grid7" id="calGrid"></div>
+    <div class="cal-legend">
+      <span><span class="day-dot" id="calLegendDot"></span><span id="calLegendText">기록 있음</span></span>
+    </div>
+  </div>
+
   <div class="footer-actions">
     <button class="link-btn danger" onclick="clearAllData()">전체 기록 삭제</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="thresholdModalOverlay" onclick="if(event.target===this) closeThresholdModal()">
+  <div class="modal-card">
+    <div class="modal-title" id="thresholdModalTitle">⏱️ 알림 시간 설정</div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>시간</label>
+        <input type="number" id="thHourInput" inputmode="numeric" min="0" placeholder="0">
+      </div>
+      <div class="modal-field">
+        <label>분</label>
+        <input type="number" id="thMinInput" inputmode="numeric" min="0" max="59" placeholder="0">
+      </div>
+    </div>
+    <div class="modal-preset-row" id="thPresetRow"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeThresholdModal()">취소</button>
+      <button class="modal-save" onclick="saveThresholdModal()">저장</button>
+    </div>
   </div>
 </div>
 
@@ -240,6 +331,7 @@ auth.onAuthStateChanged(async (user) => {
     appScreen.style.display = 'flex';
     await loadTheme();
     await loadSettings();
+    await loadActiveTab();
     await Promise.all(ITEMS.map(it => loadHistory(it.key)));
     buildItemCards();
     tick();
@@ -289,6 +381,11 @@ let editingId = null; // 편집 중인 entry id (start/end 구분은 editingFiel
 let editingField = null; // 'start' | 'end'
 let historyOpen = { kimchi:false, rice:false };
 let alerted = { kimchi:false, rice:false };
+let todayY, todayM, todayD;
+{ const t = new Date(); todayY = t.getFullYear(); todayM = t.getMonth(); todayD = t.getDate(); }
+let calY = todayY, calM = todayM;
+let filterDate = null; // { y, m, d } | null
+let activeTab = 'kimchi';
 let opChain = Promise.resolve();
 function serialize(fn){ const r = opChain.then(fn, fn); opChain = r.catch(()=>{}); return r; }
 
@@ -321,6 +418,11 @@ async function loadSettings(){
 }
 async function saveSettings(){ await storage.set('settings', JSON.stringify(SETTINGS)); }
 
+async function loadActiveTab(){
+  try{ const r = await storage.get('activeTab'); if(r && r.value && ITEMS.some(i=>i.key===r.value)) activeTab = r.value; }
+  catch(e){}
+}
+
 /* ---- 기록(히스토리) ---- */
 function histKey(key){ return `sessions:${key}`; }
 async function loadHistory(key){
@@ -336,52 +438,172 @@ async function saveHistory(key){
 }
 function activeEntry(key){ return HISTORY[key].find(e => !e.end) || null; }
 
-/* ---- 카드 빌드 & 렌더 ---- */
+/* ---- 카드 빌드 & 렌더 (한 번에 활성 탭 하나만 표시) ---- */
 function buildItemCards(){
+  updateTabButtons();
   const root = document.getElementById('itemCardsRoot');
   root.innerHTML = '';
-  ITEMS.forEach(it=>{
-    const wrap = document.createElement('div');
-    wrap.className = 'card item-card ' + it.key;
-    wrap.id = 'card-' + it.key;
-    wrap.innerHTML = `
-      <div class="item-head">
-        <span class="item-emoji">${it.emoji}</span>
-        <span class="item-title">${it.label}</span>
-        <span class="item-sub" id="sub-${it.key}"></span>
-      </div>
-      <div class="status-box" id="status-${it.key}">
-        <div class="status-label" id="statuslabel-${it.key}"></div>
-        <div class="clock-big" id="clock-${it.key}">--:--:--</div>
-        <div class="clock-sub" id="clocksub-${it.key}"></div>
-      </div>
-      <button class="item-btn" id="btn-${it.key}"></button>
-      <div class="history-toggle" id="histtoggle-${it.key}">지난 기록 보기 ▾</div>
-      <div class="history-list" id="histlist-${it.key}"></div>
-    `;
-    root.appendChild(wrap);
+  const it = ITEMS.find(i=>i.key===activeTab);
+  const wrap = document.createElement('div');
+  wrap.className = 'card item-card ' + it.key;
+  wrap.id = 'card-' + it.key;
+  wrap.innerHTML = `
+    <div class="item-head">
+      <span class="item-emoji">${it.emoji}</span>
+      <span class="item-title">${it.label}</span>
+      <span class="item-sub" id="sub-${it.key}"></span>
+    </div>
+    <div class="status-box" id="status-${it.key}">
+      <div class="status-label" id="statuslabel-${it.key}"></div>
+      <div class="clock-big" id="clock-${it.key}">--:--:--</div>
+      <div class="clock-sub" id="clocksub-${it.key}"></div>
+    </div>
+    <button class="item-btn" id="btn-${it.key}"></button>
+    <div class="history-toggle" id="histtoggle-${it.key}">지난 기록 보기 ▾</div>
+    <div class="history-list" id="histlist-${it.key}"></div>
+  `;
+  root.appendChild(wrap);
 
-    document.getElementById('sub-'+it.key).addEventListener('click', ()=> editThreshold(it.key));
-    document.getElementById('histtoggle-'+it.key).addEventListener('click', ()=>{
-      historyOpen[it.key] = !historyOpen[it.key];
-      renderItem(it.key);
-    });
-    document.getElementById('btn-'+it.key).addEventListener('click', ()=> onItemBtn(it.key));
+  document.getElementById('sub-'+it.key).addEventListener('click', ()=> editThreshold(it.key));
+  document.getElementById('histtoggle-'+it.key).addEventListener('click', ()=>{
+    historyOpen[it.key] = !historyOpen[it.key];
+    renderItem(it.key);
   });
-  ITEMS.forEach(it => renderItem(it.key));
+  document.getElementById('btn-'+it.key).addEventListener('click', ()=> onItemBtn(it.key));
+
+  renderItem(it.key);
+  renderCalendar();
 }
 
+function updateTabButtons(){
+  ITEMS.forEach(it=>{
+    const btn = document.getElementById('tabBtn-'+it.key);
+    btn.classList.toggle('selected', it.key === activeTab);
+    btn.classList.toggle(it.key, it.key === activeTab);
+  });
+}
+
+function switchTab(key){
+  if(key === activeTab) return;
+  activeTab = key;
+  filterDate = null;
+  document.getElementById('filterBannerWrap').style.display = 'none';
+  storage.set('activeTab', key).catch(()=>{});
+  buildItemCards();
+}
+
+function dayKeyStr(y,m,d){ return `${y}-${m}-${d}`; }
+
+function renderCalendar(){
+  const it = ITEMS.find(i=>i.key===activeTab);
+  document.getElementById('calTitle').innerText = `${calY}.${pad2(calM+1)}`;
+  document.getElementById('calLegendDot').className = 'day-dot ' + it.key;
+  document.getElementById('calLegendText').textContent = `${it.label} 기록 있음`;
+  const dowRow = document.getElementById('dowRow');
+  if(!dowRow.dataset.done){
+    ['일','월','화','수','목','금','토'].forEach(d=>{
+      const el = document.createElement('div'); el.className='dow'; el.innerText=d; dowRow.appendChild(el);
+    });
+    dowRow.dataset.done = '1';
+  }
+
+  // 이 달에 현재 탭 품목의 기록이 있는 날짜 집계 (세션 시작일 기준)
+  const dayHas = {}; // 'y-m-d' -> true
+  HISTORY[activeTab].forEach(entry=>{
+    const d = new Date(entry.start);
+    if(d.getFullYear()===calY && d.getMonth()===calM){
+      dayHas[dayKeyStr(d.getFullYear(), d.getMonth(), d.getDate())] = true;
+    }
+  });
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const firstDow = new Date(calY, calM, 1).getDay();
+  const lastDate = new Date(calY, calM+1, 0).getDate();
+  for(let i=0;i<firstDow;i++){ const e = document.createElement('div'); e.className='day-cell empty'; grid.appendChild(e); }
+  for(let d=1; d<=lastDate; d++){
+    const cell = document.createElement('div');
+    cell.className = 'day-cell';
+    const k = dayKeyStr(calY, calM, d);
+    if(dayHas[k]) cell.classList.add('has-record', activeTab);
+    cell.innerText = d;
+    if(calY===todayY && calM===todayM && d===todayD) cell.classList.add('is-today');
+    if(filterDate && filterDate.y===calY && filterDate.m===calM && filterDate.d===d) cell.classList.add('is-filtered');
+    cell.onclick = ()=> onDayClick(calY, calM, d);
+    grid.appendChild(cell);
+  }
+}
+
+function changeMonth(dir){
+  calM += dir;
+  if(calM<0){ calM=11; calY--; } else if(calM>11){ calM=0; calY++; }
+  renderCalendar();
+}
+
+function onDayClick(y,m,d){
+  if(filterDate && filterDate.y===y && filterDate.m===m && filterDate.d===d){
+    clearDateFilter();
+    return;
+  }
+  filterDate = { y, m, d };
+  historyOpen[activeTab] = true;
+  document.getElementById('filterBannerWrap').style.display = 'block';
+  document.getElementById('filterBannerText').textContent = `📅 ${y}.${pad2(m+1)}.${pad2(d)} 기록만 보는 중`;
+  renderItem(activeTab);
+  renderCalendar();
+}
+
+function clearDateFilter(){
+  filterDate = null;
+  document.getElementById('filterBannerWrap').style.display = 'none';
+  renderItem(activeTab);
+  renderCalendar();
+}
+
+let thresholdModalKey = null;
+const THRESHOLD_PRESETS_MIN = [30, 60, 90, 120, 180, 240, 360, 480]; // 30분~8시간
+
 function editThreshold(key){
+  thresholdModalKey = key;
   const it = ITEMS.find(i=>i.key===key);
   const cur = SETTINGS[key].thresholdMin;
-  const v = prompt(`${it.label}을(를) ${it.place}에 둘 수 있는 최대 시간(분)을 입력하세요`, cur);
-  const n = parseInt(v, 10);
-  if(n && n > 0){
-    SETTINGS[key].thresholdMin = n;
-    saveSettings();
-    alerted[key] = false;
-    renderItem(key);
-  }
+  document.getElementById('thresholdModalTitle').textContent = `⏱️ ${it.emoji} ${it.label} · ${it.place} 알림 시간 설정`;
+  document.getElementById('thHourInput').value = Math.floor(cur/60);
+  document.getElementById('thMinInput').value = cur%60;
+
+  const row = document.getElementById('thPresetRow');
+  row.innerHTML = '';
+  THRESHOLD_PRESETS_MIN.forEach(min=>{
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'modal-preset' + (min===cur ? ' selected' : '');
+    chip.textContent = min < 60 ? `${min}분` : `${min/60}시간`;
+    chip.onclick = ()=>{
+      document.getElementById('thHourInput').value = Math.floor(min/60);
+      document.getElementById('thMinInput').value = min%60;
+      row.querySelectorAll('.modal-preset').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+    };
+    row.appendChild(chip);
+  });
+
+  document.getElementById('thresholdModalOverlay').classList.add('active');
+}
+function closeThresholdModal(){
+  document.getElementById('thresholdModalOverlay').classList.remove('active');
+  thresholdModalKey = null;
+}
+function saveThresholdModal(){
+  if(!thresholdModalKey) return;
+  const h = parseInt(document.getElementById('thHourInput').value, 10) || 0;
+  const m = parseInt(document.getElementById('thMinInput').value, 10) || 0;
+  const totalMin = h*60 + m;
+  if(totalMin <= 0){ alert('1분 이상으로 설정해 주세요.'); return; }
+  SETTINGS[thresholdModalKey].thresholdMin = totalMin;
+  saveSettings();
+  alerted[thresholdModalKey] = false;
+  renderItem(thresholdModalKey);
+  closeThresholdModal();
 }
 
 function pad2(n){ return String(n).padStart(2,'0'); }
@@ -409,6 +631,8 @@ function fmtDurationShort(ms){
 }
 
 function renderItem(key){
+  const statusBoxCheck = document.getElementById('status-'+key);
+  if(!statusBoxCheck) return; // 현재 활성 탭이 아니면 DOM이 없음
   const it = ITEMS.find(i=>i.key===key);
   const thMin = SETTINGS[key].thresholdMin;
   document.getElementById('sub-'+key).textContent = `${thMin >= 60 ? (thMin/60)+'시간' : thMin+'분'} 넘으면 알림 · 수정`;
@@ -459,11 +683,18 @@ function renderHistory(key){
   if(!historyOpen[key]) return;
 
   list.innerHTML = '';
-  const entries = [...HISTORY[key]].sort((a,b)=> new Date(b.start) - new Date(a.start));
+  let entries = [...HISTORY[key]];
+  if(filterDate){
+    entries = entries.filter(e=>{
+      const d = new Date(e.start);
+      return d.getFullYear()===filterDate.y && d.getMonth()===filterDate.m && d.getDate()===filterDate.d;
+    });
+  }
+  entries.sort((a,b)=> new Date(b.start) - new Date(a.start));
   if(entries.length === 0){
     const e = document.createElement('div');
     e.className = 'history-empty';
-    e.textContent = '아직 기록이 없어요';
+    e.textContent = filterDate ? '이 날은 기록이 없어요' : '아직 기록이 없어요';
     list.appendChild(e);
     return;
   }
@@ -537,6 +768,7 @@ function commitTimeEdit(key, id, field, hhmm){
     await saveHistory(key);
     alerted[key] = false;
     renderItem(key);
+    renderCalendar();
   });
 }
 
@@ -546,6 +778,7 @@ function deleteEntry(key, id){
     await saveHistory(key);
     alerted[key] = false;
     renderItem(key);
+    renderCalendar();
   });
 }
 
@@ -561,14 +794,13 @@ function onItemBtn(key){
     }
     alerted[key] = false;
     renderItem(key);
+    renderCalendar();
   });
 }
 
 function tick(){
-  ITEMS.forEach(it=>{
-    const active = activeEntry(it.key);
-    if(active) renderItem(it.key);
-  });
+  const active = activeEntry(activeTab);
+  if(active) renderItem(activeTab);
 }
 
 async function clearAllData(){
@@ -580,7 +812,11 @@ async function clearAllData(){
       HISTORY[it.key] = [];
     }
   }catch(e){}
-  ITEMS.forEach(it=>{ alerted[it.key]=false; renderItem(it.key); });
+  ITEMS.forEach(it=>{ alerted[it.key]=false; });
+  filterDate = null;
+  document.getElementById('filterBannerWrap').style.display = 'none';
+  renderItem(activeTab);
+  renderCalendar();
 }
 </script>
 </body>
