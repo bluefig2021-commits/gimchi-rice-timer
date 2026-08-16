@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상온 타이머 — 김치 · 밥 보관시간 기록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+<style>
+  :root[data-theme="light"]{
+    --bg-deep:#f6f2ea;
+    --panel:#ffffff;
+    --panel-line:rgba(43,32,24,0.10);
+    --ink:#2a2018;
+    --ink-soft:#7a6b5c;
+    --ink-dim:#b0a494;
+    --kimchi-1:#c23b2e;
+    --kimchi-2:#8f2a20;
+    --rice-1:#c9973a;
+    --rice-2:#9c7024;
+    --overlay-1:rgba(43,32,24,0.035);
+    --overlay-2:rgba(43,32,24,0.07);
+    --overlay-input:rgba(43,32,24,0.03);
+    --card-shadow:0 4px 16px -6px rgba(43,32,24,0.10);
+    --danger:#c23f6f;
+    --danger-hover:#9c2d56;
+    --ok:#3f8f5c;
+    --warn-bg:rgba(194,59,46,0.10);
+    --warn-text:#a5301f;
+  }
+  :root[data-theme="dark"]{
+    --bg-deep:#160f0a;
+    --panel:rgba(255,255,255,0.05);
+    --panel-line:rgba(255,255,255,0.14);
+    --ink:#f3ece2;
+    --ink-soft:#c2ac96;
+    --ink-dim:#8a7660;
+    --kimchi-1:#ff6a54;
+    --kimchi-2:#ff6a54;
+    --rice-1:#f0bd63;
+    --rice-2:#f0bd63;
+    --overlay-1:rgba(255,255,255,0.045);
+    --overlay-2:rgba(255,255,255,0.09);
+    --overlay-input:rgba(255,255,255,0.05);
+    --card-shadow:0 4px 20px -6px rgba(0,0,0,0.45);
+    --danger:#ff9bbd;
+    --danger-hover:#ff5c92;
+    --ok:#6fd39a;
+    --warn-bg:rgba(255,106,84,0.16);
+    --warn-text:#ff9683;
+  }
+  :root{ --radius-lg:20px; --radius-md:14px; }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    display:flex; justify-content:center;
+    padding:30px 16px 70px;
+    font-family:'Pretendard Variable','Pretendard',-apple-system,'Apple SD Gothic Neo',sans-serif;
+    color:var(--ink);
+    background:var(--bg-deep);
+    transition:background .25s ease, color .25s ease;
+  }
+  .wrap{ width:100%; max-width:420px; display:flex; flex-direction:column; gap:16px; }
+
+  /* ---- 로그인 화면 ---- */
+  .login-screen{
+    display:none; position:fixed; inset:0; z-index:999; justify-content:center; align-items:center;
+    flex-direction:column; overflow:hidden;
+    background: radial-gradient(120% 55% at 50% -10%, rgba(194,59,46,0.14), transparent 62%), var(--bg-deep);
+  }
+  .login-screen.active{ display:flex; }
+  .login-content{ max-width:440px; width:100%; padding:0 28px; text-align:center; display:flex; flex-direction:column; align-items:center; }
+  .login-emoji{ font-size:64px; margin-bottom:18px; filter:drop-shadow(0 10px 18px rgba(194,59,46,0.35)); }
+  .login-content h1{ margin:0 0 14px; font-size:clamp(1.8rem,6.4vw,2.4rem); font-weight:900; line-height:1.28; letter-spacing:-0.02em; color:var(--ink); }
+  .login-content p{ color:var(--ink-soft); margin:0 0 26px; font-size:1rem; font-weight:600; line-height:1.6; max-width:340px; }
+  .feature-badges{ display:flex; gap:10px; justify-content:center; margin-bottom:32px; flex-wrap:wrap; }
+  .feature-badge{ display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:10px 16px; font-size:0.8rem; font-weight:800; white-space:nowrap; }
+  .feature-badge.fb-1{ background:rgba(194,59,46,0.14); color:var(--kimchi-2); }
+  .feature-badge.fb-2{ background:rgba(201,151,58,0.16); color:var(--rice-2); }
+  .feature-badge.fb-3{ background:rgba(63,143,92,0.14); color:var(--ok); }
+  .google-btn{
+    width:100%; max-width:340px; padding:17px 20px; background:#ffffff; border:1px solid rgba(43,32,24,0.14);
+    border-radius:16px; cursor:pointer; font-weight:800; color:#3c4043; font-size:1.02rem;
+    display:flex; align-items:center; justify-content:center; gap:12px;
+    box-shadow:0 10px 24px -8px rgba(194,59,46,0.30), 0 2px 8px rgba(43,32,24,0.10);
+    transition:transform .15s ease, box-shadow .2s ease;
+  }
+  .google-btn:hover{ transform:translateY(-3px); }
+  .google-btn:active{ transform:translateY(0) scale(0.98); }
+
+  .theme-row{ display:flex; justify-content:flex-end; margin-bottom:-6px; }
+  .theme-toggle{ display:flex; align-items:center; gap:6px; background:var(--overlay-1); border:1px solid var(--panel-line); border-radius:999px; padding:6px 12px; cursor:pointer; font-size:0.72rem; font-weight:600; color:var(--ink-soft); }
+
+  .card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-lg); padding:22px 20px; box-shadow:var(--card-shadow); transition:background .25s ease; }
+
+  .user-info{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:12px; border-bottom:1px solid var(--panel-line); font-size:0.8rem; }
+  .user-name{ font-weight:600; }
+  .logout-btn{ background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.7rem; font-weight:600; padding:4px; }
+
+  /* ---- 품목 카드 ---- */
+  .item-card{ padding:20px; }
+  .item-card.kimchi{ border-top:4px solid var(--kimchi-1); }
+  .item-card.rice{ border-top:4px solid var(--rice-1); }
+  .item-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .item-emoji{ font-size:1.5rem; }
+  .item-title{ font-weight:800; font-size:1.15rem; letter-spacing:-0.01em; }
+  .item-sub{ font-size:0.72rem; color:var(--ink-dim); margin-left:auto; cursor:pointer; border-bottom:1px dotted var(--ink-dim); padding-bottom:1px; }
+
+  .status-box{ border-radius:16px; padding:18px; text-align:center; background:var(--overlay-1); }
+  .status-box.active.kimchi{ background:linear-gradient(160deg, rgba(194,59,46,0.10), rgba(194,59,46,0.03)); }
+  .status-box.active.rice{ background:linear-gradient(160deg, rgba(201,151,58,0.12), rgba(201,151,58,0.03)); }
+  .status-box.warn{ background:var(--warn-bg) !important; }
+  .status-label{ font-size:0.76rem; font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
+  .status-box.warn .status-label{ color:var(--warn-text); }
+  .clock-big{ font-size:1.9rem; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+  .status-box.warn .clock-big{ color:var(--warn-text); }
+  .clock-sub{ font-size:0.72rem; color:var(--ink-dim); margin-top:4px; }
+
+  .item-btn{ width:100%; margin-top:14px; border:none; border-radius:14px; padding:14px; font-weight:800; font-size:0.95rem; cursor:pointer; color:#fff; transition:transform .08s ease; }
+  .item-btn:active{ transform:scale(0.98); }
+  .item-btn.start.kimchi{ background:linear-gradient(135deg, var(--kimchi-1), var(--kimchi-2)); }
+  .item-btn.start.rice{ background:linear-gradient(135deg, var(--rice-1), var(--rice-2)); }
+  .item-btn.stop{ background:var(--overlay-2); color:var(--ink); border:1px solid var(--panel-line); }
+
+  .history-toggle{ text-align:center; margin-top:10px; font-size:0.74rem; color:var(--ink-dim); cursor:pointer; font-weight:600; }
+  .history-list{ display:none; flex-direction:column; gap:6px; margin-top:10px; max-height:220px; overflow-y:auto; }
+  .history-list.open{ display:flex; }
+  .history-empty{ text-align:center; font-size:0.75rem; color:var(--ink-dim); padding:10px 0; }
+  .hist-row{ display:flex; align-items:center; justify-content:space-between; background:var(--overlay-1); border-radius:10px; padding:8px 10px; font-size:0.74rem; gap:6px; }
+  .hist-times{ display:flex; flex-direction:column; gap:2px; color:var(--ink); }
+  .hist-times .t-line{ display:flex; gap:6px; align-items:center; }
+  .hist-times .t-tag{ font-size:0.62rem; font-weight:800; color:var(--ink-dim); width:28px; }
+  .hist-times .t-val{ font-variant-numeric:tabular-nums; cursor:pointer; border-bottom:1px dotted var(--ink-dim); }
+  .hist-times .t-val:hover{ color:var(--kimchi-1); }
+  .hist-dur{ font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .hist-dur.over{ color:var(--warn-text); }
+  .hist-del{ background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.85rem; padding:2px 4px; }
+  .time-edit-input{ font-size:0.72rem; font-family:inherit; color:var(--ink); background:var(--overlay-input); border:1px solid var(--kimchi-1); border-radius:6px; padding:1px 4px; width:112px; }
+
+  .footer-actions{ display:flex; justify-content:center; margin-top:4px; }
+  .link-btn{ background:none; border:none; cursor:pointer; font-size:0.72rem; color:var(--ink-dim); font-weight:600; padding:6px; }
+  .link-btn.danger{ color:var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="login-screen active" id="loginScreen">
+  <div class="login-content">
+    <div class="login-emoji">🥬⏱️🍚</div>
+    <h1>상온 보관 타이머</h1>
+    <p>김치를 실온에 꺼낸 시간, 밥을 냉장고에서 꺼낸 시간을 기록하고 실시간으로 경과시간을 확인하세요. 오래 두면 자동으로 알림도 드려요.</p>
+    <div class="feature-badges">
+      <div class="feature-badge fb-1">🥬 김치 실온 타이머</div>
+      <div class="feature-badge fb-2">🍚 밥 상온 타이머</div>
+      <div class="feature-badge fb-3">🔔 임계시간 알림</div>
+    </div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg width="22" height="22" viewBox="0 0 48 48">
+        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
+          c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24
+          c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039
+          l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36
+          c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
+          c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24
+          C44,22.659,43.862,21.35,43.611,20.083z"/>
+      </svg>
+      Google 계정으로 시작하기
+    </button>
+  </div>
+</div>
+
+<div class="wrap" id="appScreen" style="display:none;">
+  <div class="theme-row">
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> <span id="themeLabel">다크 모드</span></button>
+  </div>
+
+  <div class="card">
+    <div class="user-info">
+      <span class="user-name" id="userName">사용자</span>
+      <button class="logout-btn" onclick="signOut()">로그아웃</button>
+    </div>
+  </div>
+
+  <div id="itemCardsRoot"></div>
+
+  <div class="footer-actions">
+    <button class="link-btn danger" onclick="clearAllData()">전체 기록 삭제</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* =========================================================================
+   ⚠️ 필독: 본인 Firebase 프로젝트 정보로 반드시 교체하세요.
+   1) https://console.firebase.google.com 에서 새 프로젝트 생성
+   2) 빌드 > Authentication > Sign-in method 에서 "Google" 로그인 사용 설정
+   3) 빌드 > Firestore Database 에서 데이터베이스 생성 (프로덕션/테스트 모드 중 선택)
+   4) 프로젝트 설정 > 일반 > "내 앱"에서 웹 앱 추가 후 아래 firebaseConfig 값 교체
+   5) Firestore 규칙 예시 (본인 uid만 읽기/쓰기 가능하도록 제한 권장):
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /foodlog/{docId} {
+            allow read, write: if request.auth != null;
+          }
+        }
+      }
+   ========================================================================= */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+const COLLECTION = 'foodlog';
+let ALLOWED_UID = localStorage.getItem('allowedUID') || null;
+
+auth.onAuthStateChanged(async (user) => {
+  const loginScreen = document.getElementById('loginScreen');
+  const appScreen = document.getElementById('appScreen');
+  if(user){
+    if(!ALLOWED_UID){ ALLOWED_UID = user.uid; localStorage.setItem('allowedUID', user.uid); }
+    if(user.uid !== ALLOWED_UID){
+      alert('이 앱은 특정 사용자만 사용할 수 있습니다.');
+      auth.signOut();
+      return;
+    }
+    document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+    loginScreen.classList.remove('active');
+    appScreen.style.display = 'flex';
+    await loadTheme();
+    await loadSettings();
+    await Promise.all(ITEMS.map(it => loadHistory(it.key)));
+    buildItemCards();
+    tick();
+    setInterval(tick, 1000);
+  } else {
+    loginScreen.classList.add('active');
+    appScreen.style.display = 'none';
+  }
+});
+
+async function signInWithGoogle(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try{ await auth.signInWithPopup(provider); }
+  catch(err){ alert('로그인 실패: ' + err.message); }
+}
+async function signOut(){ if(confirm('로그아웃하시겠습니까?')){ await auth.signOut(); } }
+
+/* ---- Firestore storage wrapper ---- */
+const storage = {
+  async get(key){
+    try{ const doc = await db.collection(COLLECTION).doc(key).get(); if(!doc.exists) return null; return { key, value: doc.data().value }; }
+    catch(e){ return null; }
+  },
+  async set(key, value){
+    try{ await db.collection(COLLECTION).doc(key).set({ value, updatedAt: Date.now() }); return { key, value }; }
+    catch(e){ return null; }
+  },
+  async delete(key){
+    try{ await db.collection(COLLECTION).doc(key).delete(); return { key, deleted:true }; }
+    catch(e){ return null; }
+  },
+  async list(prefix){
+    try{ const snap = await db.collection(COLLECTION).get(); const keys = snap.docs.map(d=>d.id).filter(id=>id.startsWith(prefix)); return { keys }; }
+    catch(e){ return null; }
+  }
+};
+
+/* ---- 품목 정의 ---- */
+const ITEMS = [
+  { key:'kimchi', label:'김치', emoji:'🥬', verbOut:'실온에 꺼냈어요', verbIn:'냉장고에 다시 넣었어요', place:'실온', defaultThresholdMin: 240 }, // 기본 4시간
+  { key:'rice',   label:'밥',   emoji:'🍚', verbOut:'냉장고에서 꺼냈어요', verbIn:'다시 냉장고에 넣었어요', place:'상온', defaultThresholdMin: 120 }, // 기본 2시간
+];
+
+let SETTINGS = {}; // { kimchi: {thresholdMin}, rice: {thresholdMin} }
+let HISTORY = {};  // { kimchi: [ {id,start,end} ], rice: [...] }
+let editingId = null; // 편집 중인 entry id (start/end 구분은 editingField로)
+let editingField = null; // 'start' | 'end'
+let historyOpen = { kimchi:false, rice:false };
+let alerted = { kimchi:false, rice:false };
+let opChain = Promise.resolve();
+function serialize(fn){ const r = opChain.then(fn, fn); opChain = r.catch(()=>{}); return r; }
+
+/* ---- 테마 ---- */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeLabel').innerText = theme === 'dark' ? '라이트 모드' : '다크 모드';
+  document.getElementById('themeIcon').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+async function loadTheme(){
+  let theme = 'light';
+  try{ const r = await storage.get('theme'); if(r && r.value === 'dark') theme = 'dark'; }catch(e){}
+  applyTheme(theme);
+}
+function toggleTheme(){
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  storage.set('theme', next).catch(()=>{});
+}
+
+/* ---- 설정(임계시간) ---- */
+async function loadSettings(){
+  try{
+    const r = await storage.get('settings');
+    SETTINGS = (r && r.value) ? JSON.parse(r.value) : {};
+  }catch(e){ SETTINGS = {}; }
+  ITEMS.forEach(it=>{
+    if(!SETTINGS[it.key]) SETTINGS[it.key] = { thresholdMin: it.defaultThresholdMin };
+  });
+}
+async function saveSettings(){ await storage.set('settings', JSON.stringify(SETTINGS)); }
+
+/* ---- 기록(히스토리) ---- */
+function histKey(key){ return `sessions:${key}`; }
+async function loadHistory(key){
+  try{
+    const r = await storage.get(histKey(key));
+    HISTORY[key] = (r && r.value) ? JSON.parse(r.value) : [];
+  }catch(e){ HISTORY[key] = []; }
+}
+async function saveHistory(key){
+  const arr = HISTORY[key];
+  if(arr.length === 0) await storage.delete(histKey(key));
+  else await storage.set(histKey(key), JSON.stringify(arr));
+}
+function activeEntry(key){ return HISTORY[key].find(e => !e.end) || null; }
+
+/* ---- 카드 빌드 & 렌더 ---- */
+function buildItemCards(){
+  const root = document.getElementById('itemCardsRoot');
+  root.innerHTML = '';
+  ITEMS.forEach(it=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'card item-card ' + it.key;
+    wrap.id = 'card-' + it.key;
+    wrap.innerHTML = `
+      <div class="item-head">
+        <span class="item-emoji">${it.emoji}</span>
+        <span class="item-title">${it.label}</span>
+        <span class="item-sub" id="sub-${it.key}"></span>
+      </div>
+      <div class="status-box" id="status-${it.key}">
+        <div class="status-label" id="statuslabel-${it.key}"></div>
+        <div class="clock-big" id="clock-${it.key}">--:--:--</div>
+        <div class="clock-sub" id="clocksub-${it.key}"></div>
+      </div>
+      <button class="item-btn" id="btn-${it.key}"></button>
+      <div class="history-toggle" id="histtoggle-${it.key}">지난 기록 보기 ▾</div>
+      <div class="history-list" id="histlist-${it.key}"></div>
+    `;
+    root.appendChild(wrap);
+
+    document.getElementById('sub-'+it.key).addEventListener('click', ()=> editThreshold(it.key));
+    document.getElementById('histtoggle-'+it.key).addEventListener('click', ()=>{
+      historyOpen[it.key] = !historyOpen[it.key];
+      renderItem(it.key);
+    });
+    document.getElementById('btn-'+it.key).addEventListener('click', ()=> onItemBtn(it.key));
+  });
+  ITEMS.forEach(it => renderItem(it.key));
+}
+
+function editThreshold(key){
+  const it = ITEMS.find(i=>i.key===key);
+  const cur = SETTINGS[key].thresholdMin;
+  const v = prompt(`${it.label}을(를) ${it.place}에 둘 수 있는 최대 시간(분)을 입력하세요`, cur);
+  const n = parseInt(v, 10);
+  if(n && n > 0){
+    SETTINGS[key].thresholdMin = n;
+    saveSettings();
+    alerted[key] = false;
+    renderItem(key);
+  }
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function fmtClock(totalSec){
+  const h = Math.floor(totalSec/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  return `${h}:${pad2(m)}:${pad2(s)}`;
+}
+function fmtDate(d){
+  return `${d.getMonth()+1}/${d.getDate()} ${formatTime12(d)}`;
+}
+function formatTime12(t){
+  let h = t.getHours();
+  const m = t.getMinutes();
+  const ampm = h < 12 ? '오전' : '오후';
+  let h12 = h % 12; if(h12===0) h12 = 12;
+  return `${ampm} ${h12}:${pad2(m)}`;
+}
+function fmtDurationShort(ms){
+  const totalMin = Math.floor(ms/60000);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin%60;
+  return h>0 ? `${h}시간 ${m}분` : `${m}분`;
+}
+
+function renderItem(key){
+  const it = ITEMS.find(i=>i.key===key);
+  const thMin = SETTINGS[key].thresholdMin;
+  document.getElementById('sub-'+key).textContent = `${thMin >= 60 ? (thMin/60)+'시간' : thMin+'분'} 넘으면 알림 · 수정`;
+
+  const active = activeEntry(key);
+  const statusBox = document.getElementById('status-'+key);
+  const label = document.getElementById('statuslabel-'+key);
+  const clock = document.getElementById('clock-'+key);
+  const clocksub = document.getElementById('clocksub-'+key);
+  const btn = document.getElementById('btn-'+key);
+
+  statusBox.classList.remove('active','kimchi','rice','warn');
+  if(active){
+    statusBox.classList.add('active', key);
+    const elapsedMs = Date.now() - new Date(active.start).getTime();
+    const totalSec = Math.max(Math.floor(elapsedMs/1000),0);
+    const overdue = elapsedMs >= thMin*60000;
+    label.textContent = `${it.place}에 꺼낸 지`;
+    clock.textContent = fmtClock(totalSec);
+    clocksub.textContent = `${fmtDate(new Date(active.start))}에 꺼냄`;
+    if(overdue){
+      statusBox.classList.add('warn');
+      label.textContent = `⚠️ ${it.place} 보관 시간 초과!`;
+      if(!alerted[key]){
+        alerted[key] = true;
+        setTimeout(()=> alert(`⏰ ${it.label}이(가) ${it.place}에 나온 지 ${thMin >= 60 ? (thMin/60)+'시간' : thMin+'분'}이 지났어요! 확인해 주세요.`), 50);
+      }
+    }
+    btn.className = 'item-btn stop';
+    btn.textContent = it.verbIn;
+  } else {
+    label.textContent = `${it.label} 보관 중 (냉장/서늘한 곳)`;
+    clock.textContent = '--:--:--';
+    clocksub.textContent = '아직 꺼내지 않았어요';
+    btn.className = 'item-btn start ' + key;
+    btn.textContent = it.verbOut;
+    alerted[key] = false;
+  }
+
+  renderHistory(key);
+}
+
+function renderHistory(key){
+  const toggle = document.getElementById('histtoggle-'+key);
+  const list = document.getElementById('histlist-'+key);
+  toggle.textContent = historyOpen[key] ? '지난 기록 접기 ▴' : '지난 기록 보기 ▾';
+  list.classList.toggle('open', historyOpen[key]);
+  if(!historyOpen[key]) return;
+
+  list.innerHTML = '';
+  const entries = [...HISTORY[key]].sort((a,b)=> new Date(b.start) - new Date(a.start));
+  if(entries.length === 0){
+    const e = document.createElement('div');
+    e.className = 'history-empty';
+    e.textContent = '아직 기록이 없어요';
+    list.appendChild(e);
+    return;
+  }
+  const thMin = SETTINGS[key].thresholdMin;
+  entries.forEach(entry=>{
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    const startD = new Date(entry.start);
+    const endD = entry.end ? new Date(entry.end) : null;
+    const durMs = endD ? (endD - startD) : (Date.now() - startD);
+    const over = durMs >= thMin*60000;
+
+    const startEditing = (editingId === entry.id && editingField === 'start');
+    const endEditing = (editingId === entry.id && editingField === 'end');
+
+    const startHtml = startEditing
+      ? `<input type="time" class="time-edit-input" id="editinput-${entry.id}-start" value="${pad2(startD.getHours())}:${pad2(startD.getMinutes())}">`
+      : `<span class="t-val" data-id="${entry.id}" data-field="start">${fmtDate(startD)}</span>`;
+    const endHtml = entry.end
+      ? (endEditing
+          ? `<input type="time" class="time-edit-input" id="editinput-${entry.id}-end" value="${pad2(endD.getHours())}:${pad2(endD.getMinutes())}">`
+          : `<span class="t-val" data-id="${entry.id}" data-field="end">${fmtDate(endD)}</span>`)
+      : `<span style="color:var(--ink-dim);">진행 중</span>`;
+
+    row.innerHTML = `
+      <div class="hist-times">
+        <div class="t-line"><span class="t-tag">꺼냄</span>${startHtml}</div>
+        <div class="t-line"><span class="t-tag">${entry.end ? '넣음' : ''}</span>${endHtml}</div>
+      </div>
+      <div class="hist-dur ${over ? 'over' : ''}">${fmtDurationShort(durMs)}</div>
+      <button class="hist-del" data-id="${entry.id}">✕</button>
+    `;
+
+    row.querySelectorAll('.t-val').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        editingId = entry.id;
+        editingField = el.dataset.field;
+        renderHistory(key);
+      });
+    });
+    if(startEditing){
+      const inp = row.querySelector('#editinput-'+entry.id+'-start');
+      setTimeout(()=> inp && inp.focus(), 0);
+      inp.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') commitTimeEdit(key, entry.id, 'start', inp.value); if(ev.key==='Escape'){ editingId=null; renderHistory(key); } });
+      inp.addEventListener('blur', ()=> commitTimeEdit(key, entry.id, 'start', inp.value));
+    }
+    if(endEditing){
+      const inp = row.querySelector('#editinput-'+entry.id+'-end');
+      setTimeout(()=> inp && inp.focus(), 0);
+      inp.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') commitTimeEdit(key, entry.id, 'end', inp.value); if(ev.key==='Escape'){ editingId=null; renderHistory(key); } });
+      inp.addEventListener('blur', ()=> commitTimeEdit(key, entry.id, 'end', inp.value));
+    }
+    row.querySelector('.hist-del').addEventListener('click', ()=> deleteEntry(key, entry.id));
+
+    list.appendChild(row);
+  });
+}
+
+function commitTimeEdit(key, id, field, hhmm){
+  return serialize(async ()=>{
+    editingId = null; editingField = null;
+    if(!hhmm){ renderItem(key); return; }
+    const [hh,mm] = hhmm.split(':').map(Number);
+    if(Number.isNaN(hh) || Number.isNaN(mm)){ renderItem(key); return; }
+    const entry = HISTORY[key].find(e=>e.id===id);
+    if(!entry){ renderItem(key); return; }
+    const base = new Date(field==='start' ? entry.start : entry.end);
+    base.setHours(hh, mm, base.getSeconds());
+    if(field==='start') entry.start = base.toISOString();
+    else entry.end = base.toISOString();
+    await saveHistory(key);
+    alerted[key] = false;
+    renderItem(key);
+  });
+}
+
+function deleteEntry(key, id){
+  return serialize(async ()=>{
+    HISTORY[key] = HISTORY[key].filter(e=> e.id !== id);
+    await saveHistory(key);
+    alerted[key] = false;
+    renderItem(key);
+  });
+}
+
+function onItemBtn(key){
+  return serialize(async ()=>{
+    const active = activeEntry(key);
+    if(active){
+      active.end = new Date().toISOString();
+      await saveHistory(key);
+    } else {
+      HISTORY[key].push({ id: Date.now()+'-'+Math.random().toString(36).slice(2,7), start: new Date().toISOString(), end: null });
+      await saveHistory(key);
+    }
+    alerted[key] = false;
+    renderItem(key);
+  });
+}
+
+function tick(){
+  ITEMS.forEach(it=>{
+    const active = activeEntry(it.key);
+    if(active) renderItem(it.key);
+  });
+}
+
+async function clearAllData(){
+  if(!confirm('⚠️ 저장된 모든 기록이 영구 삭제됩니다. 계속할까요?')) return;
+  try{
+    for(const it of ITEMS){
+      const list = await storage.list(histKey(it.key));
+      await storage.delete(histKey(it.key));
+      HISTORY[it.key] = [];
+    }
+  }catch(e){}
+  ITEMS.forEach(it=>{ alerted[it.key]=false; renderItem(it.key); });
+}
+</script>
+</body>
+</html>
