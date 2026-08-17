@@ -123,11 +123,15 @@
   .clock-sub.editable{ cursor:pointer; border-bottom:1px dotted var(--ink-dim); display:inline-block; padding-bottom:1px; font-weight:600; }
   .clock-sub.editable:hover{ color:var(--kimchi-1); border-color:var(--kimchi-1); }
 
-  .insight-box{ margin-top:12px; border-radius:14px; padding:12px 14px; background:var(--overlay-1); border:1px solid var(--panel-line); display:none; }
+  .insight-box{ margin-top:12px; border-radius:14px; padding:16px 16px; background:var(--overlay-1); border:1px solid var(--panel-line); display:none; text-align:center; }
   .insight-box.show{ display:block; }
-  .insight-title{ font-size:0.72rem; font-weight:800; color:var(--ink-soft); margin-bottom:4px; display:flex; align-items:center; gap:5px; }
-  .insight-text{ font-size:0.82rem; font-weight:600; color:var(--ink); line-height:1.5; }
-  .insight-disclaimer{ font-size:0.64rem; color:var(--ink-dim); margin-top:6px; line-height:1.4; }
+  .insight-title{ font-size:0.76rem; font-weight:800; color:var(--ink-soft); margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .insight-big{ font-size:1.65rem; font-weight:900; letter-spacing:-0.01em; margin-bottom:4px; }
+  .insight-box.kimchi .insight-big{ color:var(--kimchi-1); }
+  .insight-box.rice .insight-big{ color:var(--rice-2); }
+  .insight-detail{ font-size:0.86rem; font-weight:600; color:var(--ink); line-height:1.5; margin-bottom:6px; }
+  .insight-meta{ font-size:0.72rem; color:var(--ink-dim); margin-bottom:10px; }
+  .insight-disclaimer{ font-size:0.62rem; color:var(--ink-dim); line-height:1.4; border-top:1px solid var(--panel-line); padding-top:8px; }
 
   .item-btn{ width:100%; margin-top:14px; border:none; border-radius:14px; padding:14px; font-weight:800; font-size:0.95rem; cursor:pointer; color:#fff; transition:transform .08s ease; }
   .item-btn:active{ transform:scale(0.98); }
@@ -382,12 +386,12 @@ const ITEMS = [
     idleLabel:'김치 보관 중 (냉장고)',
     idleSub:'아직 꺼내지 않았어요',
     histStartTag:'꺼냄', histEndTag:'넣음',
-    insightIcon:'🦠', insightTitle:'발효 진행 참고 (추정)',
+    insightIcon:'🦠', insightHeading:'발효 진행 (추정)',
     insightStages:[
-      { maxMin:120,  text:'짧은 노출 · 유산균 증식에 거의 영향 없을 것으로 보여요' },
-      { maxMin:360,  text:'온도가 높으면 발효가 조금씩 더 진행될 가능성이 있어요' },
-      { maxMin:720,  text:'발효가 눈에 띄게 진행됐을 가능성이 있어요 (신맛·기포 증가 가능) · 가능하면 냉장 보관 권장' },
-      { maxMin:Infinity, text:'장시간 상온 노출 · 발효가 꽤 진행돼 산미가 강해지고 물러졌을 가능성이 있어요 · 위생상 빨리 냉장고에 넣는 걸 권장 (참고: 이건 이미 익은 김치를 잠깐 꺼낸 상황에 대한 정밀 연구는 없고, 발효 원리를 바탕으로 한 일반적 추정이에요)' },
+      { maxMin:120,  big:'영향 적음', detail:'짧은 노출 · 유산균 증식에 거의 영향 없을 것으로 보여요' },
+      { maxMin:360,  big:'조금 진행', detail:'온도가 높으면 발효가 조금씩 진행됐을 가능성이 있어요' },
+      { maxMin:720,  big:'꽤 진행', detail:'신맛·기포 증가 가능 · 가능하면 냉장 보관 권장' },
+      { maxMin:Infinity, big:'많이 진행', detail:'산미가 강해지고 물러졌을 가능성 · 위생상 빨리 냉장고에 넣는 걸 권장' },
     ]
   },
   {
@@ -399,12 +403,12 @@ const ITEMS = [
     idleLabel:'밥 냉장 보관 중 아님',
     idleSub:'아직 냉장고에 넣지 않았어요',
     histStartTag:'넣음', histEndTag:'꺼냄',
-    insightIcon:'🌾', insightTitle:'저항성 전분 형성 참고 (추정)',
+    insightIcon:'🌾', insightHeading:'저항성 전분 형성 (추정)',
     insightStages:[
-      { maxMin:360,  text:'약 1배 (거의 변화 없음) · 형성 시작 단계' },
-      { maxMin:720,  text:'약 1.5~2배 형성 추정 · 증가량의 대부분이 이 구간에서 만들어져요' },
-      { maxMin:1440, text:'약 2~2.5배 형성 추정 (연구 기준 24시간에 최대 2.5배 보고)' },
-      { maxMin:Infinity, text:'약 2.5배 이상 형성 추정 · 연구에서 확인된 최고 구간(24시간)을 넘었어요, 그 이상은 데이터 부족' },
+      { maxMin:360,  big:'약 1배', detail:'형성 시작 단계 · 거의 변화 없음' },
+      { maxMin:720,  big:'약 1.5배', detail:'증가량의 대부분이 이 구간에서 만들어져요' },
+      { maxMin:1440, big:'약 2배', detail:'계속 증가 중 (연구 기준 24시간에 최대 2.5배 보고)' },
+      { maxMin:Infinity, big:'약 2.5배', detail:'연구에서 확인된 최고 구간(24시간) · 그 이상은 데이터 부족' },
     ]
   },
 ];
@@ -476,9 +480,11 @@ function buildItemCards(){
       <div class="clock-sub" id="clocksub-${it.key}"></div>
     </div>
     <button class="item-btn" id="btn-${it.key}"></button>
-    <div class="insight-box" id="insight-${it.key}">
-      <div class="insight-title">${it.insightIcon} ${it.insightTitle}</div>
-      <div class="insight-text" id="insighttext-${it.key}"></div>
+    <div class="insight-box ${it.key}" id="insight-${it.key}">
+      <div class="insight-title">${it.insightIcon} ${it.insightHeading}</div>
+      <div class="insight-big" id="insightbig-${it.key}"></div>
+      <div class="insight-detail" id="insightdetail-${it.key}"></div>
+      <div class="insight-meta" id="insightmeta-${it.key}"></div>
       <div class="insight-disclaimer">참고용 대략적 추정치예요. 온도·염도·재료·냉장고 상태에 따라 실제와 다를 수 있고, 정밀 측정값이 아니에요.</div>
     </div>
     <div class="history-toggle" id="histtoggle-${it.key}">지난 기록 보기 ▾</div>
@@ -617,7 +623,9 @@ function renderItem(key){
   const clocksub = document.getElementById('clocksub-'+key);
   const btn = document.getElementById('btn-'+key);
   const insightBox = document.getElementById('insight-'+key);
-  const insightText = document.getElementById('insighttext-'+key);
+  const insightBig = document.getElementById('insightbig-'+key);
+  const insightDetail = document.getElementById('insightdetail-'+key);
+  const insightMeta = document.getElementById('insightmeta-'+key);
 
   statusBox.classList.remove('active','kimchi','rice');
   if(active){
@@ -633,7 +641,9 @@ function renderItem(key){
 
     const elapsedMin = elapsedMs / 60000;
     const stage = it.insightStages.find(s => elapsedMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
-    insightText.textContent = stage.text;
+    insightBig.textContent = stage.big;
+    insightDetail.textContent = stage.detail;
+    insightMeta.textContent = '지금 진행 중';
     insightBox.classList.add('show');
   } else {
     label.textContent = it.idleLabel;
@@ -650,7 +660,9 @@ function renderItem(key){
       const lastEndD = new Date(last.end);
       const durMin = (lastEndD - lastStartD) / 60000;
       const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
-      insightText.textContent = `${fmtDate(lastStartD)} ~ ${fmtDate(lastEndD)} (${fmtDurationShort(durMin*60000)}): ${stage.text}`;
+      insightBig.textContent = stage.big;
+      insightDetail.textContent = stage.detail;
+      insightMeta.textContent = `${fmtDate(lastStartD)} ~ ${fmtDate(lastEndD)} (${fmtDurationShort(durMin*60000)})`;
       insightBox.classList.add('show');
     } else {
       insightBox.classList.remove('show');
