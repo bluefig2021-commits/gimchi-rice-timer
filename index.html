@@ -160,12 +160,9 @@
   .hist-dur.over{ color:var(--warn-text); }
   .hist-del{ background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.85rem; padding:2px 4px; }
   .time-edit-input{ font-size:0.72rem; font-family:inherit; color:var(--ink); background:var(--overlay-input); border:1px solid var(--kimchi-1); border-radius:6px; padding:1px 4px; width:112px; }
-  .hist-expand{ background:var(--overlay-2); border-radius:0 0 10px 10px; margin-top:-6px; padding:10px 12px 10px; text-align:center; }
-  .hist-expand .hist-big{ font-size:1.15rem; font-weight:900; margin-bottom:2px; }
-  .hist-row.kimchi + .hist-expand .hist-big{ color:var(--kimchi-1); }
-  .hist-row.rice + .hist-expand .hist-big{ color:var(--rice-2); }
-  .hist-expand .hist-detail{ font-size:0.72rem; font-weight:600; color:var(--ink-soft); line-height:1.4; }
-  .hist-chevron{ font-size:0.6rem; color:var(--ink-dim); margin-left:4px; }
+  .hist-row{ border:1.5px solid transparent; transition:background .15s ease, border-color .15s ease; }
+  .hist-row.kimchi.selected{ background:rgba(194,59,46,0.14); border-color:var(--kimchi-1); }
+  .hist-row.rice.selected{ background:rgba(201,151,58,0.18); border-color:var(--rice-2); }
 
   .footer-actions{ display:flex; justify-content:center; margin-top:4px; }
   .link-btn{ background:none; border:none; cursor:pointer; font-size:0.72rem; color:var(--ink-dim); font-weight:600; padding:6px; }
@@ -443,7 +440,7 @@ const ITEMS = [
 
 let HISTORY = {};  // { kimchi: [ {id,start,end} ], rice: [...] }
 let historyOpen = { kimchi:false, rice:false };
-let expandedHistIds = new Set();
+let selectedHist = { kimchi:null, rice:null }; // 클릭해서 선택한 기록 id (없으면 null)
 let todayY, todayM, todayD;
 { const t = new Date(); todayY = t.getFullYear(); todayM = t.getMonth(); todayD = t.getDate(); }
 let calY = todayY, calM = todayM;
@@ -683,27 +680,32 @@ function renderItem(key){
     });
   }
 
-  // 가장 최근 종료된 기록의 요약(참고용 인사이트) — 활성 세션과 별개로 항상 표시
+  // 상단 큰 인사이트 박스: 기록을 클릭하기 전엔 비어있고, 클릭한 기록의 정보로 채워짐
+  updateInsightBox(key);
+
+  renderHistory(key);
+}
+
+function updateInsightBox(key){
+  const it = ITEMS.find(i=>i.key===key);
   const insightBox = document.getElementById('insight-'+key);
   const insightBig = document.getElementById('insightbig-'+key);
   const insightDetail = document.getElementById('insightdetail-'+key);
   const insightMeta = document.getElementById('insightmeta-'+key);
-  const finished = HISTORY[key].filter(e=>e.end);
-  if(finished.length > 0){
-    const last = finished.reduce((a,b)=> new Date(a.end) > new Date(b.end) ? a : b);
-    const lastStartD = new Date(last.start);
-    const lastEndD = new Date(last.end);
-    const durMin = (lastEndD - lastStartD) / 60000;
-    const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
-    insightBig.textContent = stage.big;
-    insightMeta.textContent = `${last.label ? escapeHtml(last.label)+' · ' : ''}${fmtDate(lastStartD)} ~ ${fmtDate(lastEndD)} (${fmtDurationShort(durMin*60000)})`;
-    insightDetail.textContent = stage.detail;
-    insightBox.classList.add('show');
-  } else {
+  const selId = selectedHist[key];
+  const entry = selId ? HISTORY[key].find(e=>e.id===selId) : null;
+  if(!entry){
     insightBox.classList.remove('show');
+    return;
   }
-
-  renderHistory(key);
+  const startD = new Date(entry.start);
+  const endD = entry.end ? new Date(entry.end) : new Date();
+  const durMin = (endD - startD) / 60000;
+  const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
+  insightBig.textContent = stage.big;
+  insightMeta.textContent = `${entry.label ? escapeHtml(entry.label)+' · ' : ''}${fmtDate(startD)} ~ ${entry.end ? fmtDate(endD) : '진행 중'} (${fmtDurationShort(durMin*60000)})`;
+  insightDetail.textContent = stage.detail;
+  insightBox.classList.add('show');
 }
 
 function renderHistory(key){
@@ -732,7 +734,7 @@ function renderHistory(key){
   const it = ITEMS.find(i=>i.key===key);
   entries.forEach(entry=>{
     const row = document.createElement('div');
-    row.className = 'hist-row ' + key;
+    row.className = 'hist-row ' + key + (selectedHist[key] === entry.id ? ' selected' : '');
     const startD = new Date(entry.start);
     const endD = entry.end ? new Date(entry.end) : null;
     const durMs = endD ? (endD - startD) : (Date.now() - startD);
@@ -748,7 +750,7 @@ function renderHistory(key){
         <div class="t-line"><span class="t-tag">${it.histStartTag}</span>${startHtml}</div>
         <div class="t-line"><span class="t-tag">${entry.end ? it.histEndTag : ''}</span>${endHtml}</div>
       </div>
-      <div class="hist-dur">${fmtDurationShort(durMs)}<span class="hist-chevron">${expandedHistIds.has(entry.id) ? '▲' : '▾'}</span></div>
+      <div class="hist-dur">${fmtDurationShort(durMs)}</div>
       <button class="hist-del" data-id="${entry.id}">✕</button>
     `;
 
@@ -757,24 +759,12 @@ function renderHistory(key){
     });
     row.querySelector('.hist-del').addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteEntry(key, entry.id); });
     row.addEventListener('click', ()=>{
-      if(expandedHistIds.has(entry.id)) expandedHistIds.delete(entry.id);
-      else expandedHistIds.add(entry.id);
+      selectedHist[key] = (selectedHist[key] === entry.id) ? null : entry.id;
       renderHistory(key);
+      updateInsightBox(key);
     });
 
     list.appendChild(row);
-
-    if(expandedHistIds.has(entry.id)){
-      const durMin = durMs / 60000;
-      const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
-      const panel = document.createElement('div');
-      panel.className = 'hist-expand';
-      panel.innerHTML = `
-        <div class="hist-big">${it.insightIcon} ${stage.big}</div>
-        <div class="hist-detail">${stage.detail}</div>
-      `;
-      list.appendChild(panel);
-    }
   });
 }
 
@@ -891,6 +881,7 @@ function saveTimeEditModal(){
 function deleteEntry(key, id){
   return serialize(async ()=>{
     HISTORY[key] = HISTORY[key].filter(e=> e.id !== id);
+    if(selectedHist[key] === id) selectedHist[key] = null;
     await saveHistory(key);
     renderItem(key);
     renderCalendar();
