@@ -263,27 +263,6 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="thresholdModalOverlay" onclick="if(event.target===this) closeThresholdModal()">
-  <div class="modal-card">
-    <div class="modal-title" id="thresholdModalTitle">⏱️ 알림 시간 설정</div>
-    <div class="modal-row">
-      <div class="modal-field">
-        <label>시간</label>
-        <input type="number" id="thHourInput" inputmode="numeric" min="0" placeholder="0">
-      </div>
-      <div class="modal-field">
-        <label>분</label>
-        <input type="number" id="thMinInput" inputmode="numeric" min="0" max="59" placeholder="0">
-      </div>
-    </div>
-    <div class="modal-preset-row" id="thPresetRow"></div>
-    <div class="modal-btns">
-      <button class="modal-cancel" onclick="closeThresholdModal()">취소</button>
-      <button class="modal-save" onclick="saveThresholdModal()">저장</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="timeEditModalOverlay" onclick="if(event.target===this) closeTimeEditModal()">
   <div class="modal-card">
     <div class="modal-title" id="timeEditModalTitle">✏️ 시각 수정</div>
@@ -346,7 +325,6 @@ auth.onAuthStateChanged(async (user) => {
     loginScreen.classList.remove('active');
     appScreen.style.display = 'flex';
     await loadTheme();
-    await loadSettings();
     await loadActiveTab();
     await Promise.all(ITEMS.map(it => loadHistory(it.key)));
     buildItemCards();
@@ -385,16 +363,34 @@ const storage = {
   }
 };
 
-/* ---- 품목 정의 ---- */
+/* ---- 품목 정의 ----
+   김치: 냉장고 → 실온으로 꺼낸 뒤, 실온에 있는 시간을 잼 (다시 냉장고에 넣으면 종료)
+   밥:   냉장고에 넣은 뒤, 냉장 보관된 시간을 잼 (식사 시간에 맞춰 꺼내면 종료) */
 const ITEMS = [
-  { key:'kimchi', label:'김치', emoji:'🥬', verbOut:'실온에 꺼냈어요', verbIn:'냉장고에 다시 넣었어요', place:'실온', defaultThresholdMin: 240 }, // 기본 4시간
-  { key:'rice',   label:'밥',   emoji:'🍚', verbOut:'냉장고에서 꺼냈어요', verbIn:'다시 냉장고에 넣었어요', place:'상온', defaultThresholdMin: 120 }, // 기본 2시간
+  {
+    key:'kimchi', label:'김치', emoji:'🥬',
+    verbStart:'실온에 꺼냈어요',
+    verbEnd:'냉장고에 다시 넣었어요',
+    activeLabel:'실온에 꺼낸 지',
+    startedSuffix:'꺼냄',
+    idleLabel:'김치 보관 중 (냉장고)',
+    idleSub:'아직 꺼내지 않았어요',
+    histStartTag:'꺼냄', histEndTag:'넣음'
+  },
+  {
+    key:'rice', label:'밥', emoji:'🍚',
+    verbStart:'냉장고에 넣었어요',
+    verbEnd:'식사 시간에 맞춰 꺼냈어요',
+    activeLabel:'냉장 보관한 지',
+    startedSuffix:'넣음',
+    idleLabel:'밥 냉장 보관 중 아님',
+    idleSub:'아직 냉장고에 넣지 않았어요',
+    histStartTag:'넣음', histEndTag:'꺼냄'
+  },
 ];
 
-let SETTINGS = {}; // { kimchi: {thresholdMin}, rice: {thresholdMin} }
 let HISTORY = {};  // { kimchi: [ {id,start,end} ], rice: [...] }
 let historyOpen = { kimchi:false, rice:false };
-let alerted = { kimchi:false, rice:false };
 let todayY, todayM, todayD;
 { const t = new Date(); todayY = t.getFullYear(); todayM = t.getMonth(); todayD = t.getDate(); }
 let calY = todayY, calM = todayM;
@@ -419,18 +415,6 @@ function toggleTheme(){
   applyTheme(next);
   storage.set('theme', next).catch(()=>{});
 }
-
-/* ---- 설정(임계시간) ---- */
-async function loadSettings(){
-  try{
-    const r = await storage.get('settings');
-    SETTINGS = (r && r.value) ? JSON.parse(r.value) : {};
-  }catch(e){ SETTINGS = {}; }
-  ITEMS.forEach(it=>{
-    if(!SETTINGS[it.key]) SETTINGS[it.key] = { thresholdMin: it.defaultThresholdMin };
-  });
-}
-async function saveSettings(){ await storage.set('settings', JSON.stringify(SETTINGS)); }
 
 async function loadActiveTab(){
   try{ const r = await storage.get('activeTab'); if(r && r.value && ITEMS.some(i=>i.key===r.value)) activeTab = r.value; }
@@ -465,7 +449,6 @@ function buildItemCards(){
     <div class="item-head">
       <span class="item-emoji">${it.emoji}</span>
       <span class="item-title">${it.label}</span>
-      <span class="item-sub" id="sub-${it.key}"></span>
     </div>
     <div class="status-box" id="status-${it.key}">
       <div class="status-label" id="statuslabel-${it.key}"></div>
@@ -478,7 +461,6 @@ function buildItemCards(){
   `;
   root.appendChild(wrap);
 
-  document.getElementById('sub-'+it.key).addEventListener('click', ()=> editThreshold(it.key));
   document.getElementById('histtoggle-'+it.key).addEventListener('click', ()=>{
     historyOpen[it.key] = !historyOpen[it.key];
     renderItem(it.key);
@@ -574,52 +556,6 @@ function clearDateFilter(){
   renderCalendar();
 }
 
-let thresholdModalKey = null;
-const THRESHOLD_PRESETS_MIN = [30, 60, 90, 120, 180, 240, 360, 480]; // 30분~8시간
-
-function editThreshold(key){
-  thresholdModalKey = key;
-  const it = ITEMS.find(i=>i.key===key);
-  const cur = SETTINGS[key].thresholdMin;
-  document.getElementById('thresholdModalTitle').textContent = `⏱️ ${it.emoji} ${it.label} · ${it.place} 알림 시간 설정`;
-  document.getElementById('thHourInput').value = Math.floor(cur/60);
-  document.getElementById('thMinInput').value = cur%60;
-
-  const row = document.getElementById('thPresetRow');
-  row.innerHTML = '';
-  THRESHOLD_PRESETS_MIN.forEach(min=>{
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'modal-preset' + (min===cur ? ' selected' : '');
-    chip.textContent = min < 60 ? `${min}분` : `${min/60}시간`;
-    chip.onclick = ()=>{
-      document.getElementById('thHourInput').value = Math.floor(min/60);
-      document.getElementById('thMinInput').value = min%60;
-      row.querySelectorAll('.modal-preset').forEach(c=>c.classList.remove('selected'));
-      chip.classList.add('selected');
-    };
-    row.appendChild(chip);
-  });
-
-  document.getElementById('thresholdModalOverlay').classList.add('active');
-}
-function closeThresholdModal(){
-  document.getElementById('thresholdModalOverlay').classList.remove('active');
-  thresholdModalKey = null;
-}
-function saveThresholdModal(){
-  if(!thresholdModalKey) return;
-  const h = parseInt(document.getElementById('thHourInput').value, 10) || 0;
-  const m = parseInt(document.getElementById('thMinInput').value, 10) || 0;
-  const totalMin = h*60 + m;
-  if(totalMin <= 0){ alert('1분 이상으로 설정해 주세요.'); return; }
-  SETTINGS[thresholdModalKey].thresholdMin = totalMin;
-  saveSettings();
-  alerted[thresholdModalKey] = false;
-  renderItem(thresholdModalKey);
-  closeThresholdModal();
-}
-
 function pad2(n){ return String(n).padStart(2,'0'); }
 function fmtClock(totalSec){
   const h = Math.floor(totalSec/3600);
@@ -648,8 +584,6 @@ function renderItem(key){
   const statusBoxCheck = document.getElementById('status-'+key);
   if(!statusBoxCheck) return; // 현재 활성 탭이 아니면 DOM이 없음
   const it = ITEMS.find(i=>i.key===key);
-  const thMin = SETTINGS[key].thresholdMin;
-  document.getElementById('sub-'+key).textContent = `${thMin >= 60 ? (thMin/60)+'시간' : thMin+'분'} 넘으면 알림 · 수정`;
 
   const active = activeEntry(key);
   const statusBox = document.getElementById('status-'+key);
@@ -658,33 +592,23 @@ function renderItem(key){
   const clocksub = document.getElementById('clocksub-'+key);
   const btn = document.getElementById('btn-'+key);
 
-  statusBox.classList.remove('active','kimchi','rice','warn');
+  statusBox.classList.remove('active','kimchi','rice');
   if(active){
     statusBox.classList.add('active', key);
     const elapsedMs = Date.now() - new Date(active.start).getTime();
     const totalSec = Math.max(Math.floor(elapsedMs/1000),0);
-    const overdue = elapsedMs >= thMin*60000;
-    label.textContent = `${it.place}에 꺼낸 지`;
+    label.textContent = it.activeLabel;
     clock.textContent = fmtClock(totalSec);
-    clocksub.innerHTML = `<span class="clock-sub editable" id="clocksubedit-${key}">✏️ ${fmtDate(new Date(active.start))}에 꺼냄 · 시간 수정</span>`;
+    clocksub.innerHTML = `<span class="clock-sub editable" id="clocksubedit-${key}">✏️ ${fmtDate(new Date(active.start))}에 ${it.startedSuffix} · 시간 수정</span>`;
     document.getElementById('clocksubedit-'+key).addEventListener('click', ()=> editActiveStart(key));
-    if(overdue){
-      statusBox.classList.add('warn');
-      label.textContent = `⚠️ ${it.place} 보관 시간 초과!`;
-      if(!alerted[key]){
-        alerted[key] = true;
-        setTimeout(()=> alert(`⏰ ${it.label}이(가) ${it.place}에 나온 지 ${thMin >= 60 ? (thMin/60)+'시간' : thMin+'분'}이 지났어요! 확인해 주세요.`), 50);
-      }
-    }
     btn.className = 'item-btn stop';
-    btn.textContent = it.verbIn;
+    btn.textContent = it.verbEnd;
   } else {
-    label.textContent = `${it.label} 보관 중 (냉장/서늘한 곳)`;
+    label.textContent = it.idleLabel;
     clock.textContent = '--:--:--';
-    clocksub.textContent = '아직 꺼내지 않았어요';
+    clocksub.textContent = it.idleSub;
     btn.className = 'item-btn start ' + key;
-    btn.textContent = it.verbOut;
-    alerted[key] = false;
+    btn.textContent = it.verbStart;
   }
 
   renderHistory(key);
@@ -713,14 +637,13 @@ function renderHistory(key){
     list.appendChild(e);
     return;
   }
-  const thMin = SETTINGS[key].thresholdMin;
+  const it = ITEMS.find(i=>i.key===key);
   entries.forEach(entry=>{
     const row = document.createElement('div');
     row.className = 'hist-row';
     const startD = new Date(entry.start);
     const endD = entry.end ? new Date(entry.end) : null;
     const durMs = endD ? (endD - startD) : (Date.now() - startD);
-    const over = durMs >= thMin*60000;
 
     const startHtml = `<span class="t-val" data-id="${entry.id}" data-field="start">✏️ ${fmtDate(startD)}</span>`;
     const endHtml = entry.end
@@ -729,10 +652,10 @@ function renderHistory(key){
 
     row.innerHTML = `
       <div class="hist-times">
-        <div class="t-line"><span class="t-tag">꺼냄</span>${startHtml}</div>
-        <div class="t-line"><span class="t-tag">${entry.end ? '넣음' : ''}</span>${endHtml}</div>
+        <div class="t-line"><span class="t-tag">${it.histStartTag}</span>${startHtml}</div>
+        <div class="t-line"><span class="t-tag">${entry.end ? it.histEndTag : ''}</span>${endHtml}</div>
       </div>
-      <div class="hist-dur ${over ? 'over' : ''}">${fmtDurationShort(durMs)}</div>
+      <div class="hist-dur">${fmtDurationShort(durMs)}</div>
       <button class="hist-del" data-id="${entry.id}">✕</button>
     `;
 
@@ -762,7 +685,8 @@ function openTimeEditModal(key, id, field){
   timeEditCtx = { key, id, field };
   const it = ITEMS.find(i=>i.key===key);
   const d = new Date(field==='start' ? entry.start : entry.end);
-  document.getElementById('timeEditModalTitle').textContent = `✏️ ${it.emoji} ${it.label} · ${field==='start' ? '꺼낸 시각' : '넣은 시각'} 수정`;
+  const fieldLabel = field==='start' ? it.histStartTag : it.histEndTag;
+  document.getElementById('timeEditModalTitle').textContent = `✏️ ${it.emoji} ${it.label} · ${fieldLabel} 시각 수정`;
   document.getElementById('timeEditInput').value = toDatetimeLocalValue(d);
   document.getElementById('timeEditModalOverlay').classList.add('active');
 }
@@ -780,16 +704,16 @@ function saveTimeEditModal(){
     const { key, id, field } = timeEditCtx;
     const entry = HISTORY[key].find(e=>e.id===id);
     if(!entry){ closeTimeEditModal(); return; }
+    const it = ITEMS.find(i=>i.key===key);
     if(field==='start' && entry.end && newDate >= new Date(entry.end)){
-      alert('꺼낸 시각이 넣은 시각보다 늦을 수 없어요.'); return;
+      alert(`${it.histStartTag} 시각이 ${it.histEndTag} 시각보다 늦을 수 없어요.`); return;
     }
     if(field==='end' && newDate <= new Date(entry.start)){
-      alert('넣은 시각이 꺼낸 시각보다 빠를 수 없어요.'); return;
+      alert(`${it.histEndTag} 시각이 ${it.histStartTag} 시각보다 빠를 수 없어요.`); return;
     }
     if(field==='start') entry.start = newDate.toISOString();
     else entry.end = newDate.toISOString();
     await saveHistory(key);
-    alerted[key] = false;
     closeTimeEditModal();
     renderItem(key);
     renderCalendar();
@@ -800,7 +724,6 @@ function deleteEntry(key, id){
   return serialize(async ()=>{
     HISTORY[key] = HISTORY[key].filter(e=> e.id !== id);
     await saveHistory(key);
-    alerted[key] = false;
     renderItem(key);
     renderCalendar();
   });
@@ -816,7 +739,6 @@ function onItemBtn(key){
       HISTORY[key].push({ id: Date.now()+'-'+Math.random().toString(36).slice(2,7), start: new Date().toISOString(), end: null });
       await saveHistory(key);
     }
-    alerted[key] = false;
     renderItem(key);
     renderCalendar();
   });
@@ -836,7 +758,6 @@ async function clearAllData(){
       HISTORY[it.key] = [];
     }
   }catch(e){}
-  ITEMS.forEach(it=>{ alerted[it.key]=false; });
   filterDate = null;
   document.getElementById('filterBannerWrap').style.display = 'none';
   renderItem(activeTab);
