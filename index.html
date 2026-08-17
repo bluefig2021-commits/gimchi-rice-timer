@@ -384,10 +384,10 @@ const ITEMS = [
     histStartTag:'꺼냄', histEndTag:'넣음',
     insightIcon:'🦠', insightTitle:'발효 진행 참고 (추정)',
     insightStages:[
-      { maxMin:120,  text:'짧은 노출 · 유산균 증식에 거의 영향 없어요' },
-      { maxMin:360,  text:'온도가 높으면 발효가 조금씩 더 진행될 수 있어요' },
-      { maxMin:720,  text:'발효가 눈에 띄게 진행될 수 있어요 (신맛·기포 증가 가능) · 가능하면 냉장 보관 권장' },
-      { maxMin:Infinity, text:'장시간 상온 노출 · 발효가 상당히 진행돼 산미가 강해지고 물러질 수 있어요 · 위생상 빨리 냉장고에 넣는 걸 권장' },
+      { maxMin:120,  text:'짧은 노출 · 유산균 증식에 거의 영향 없을 것으로 보여요' },
+      { maxMin:360,  text:'온도가 높으면 발효가 조금씩 더 진행될 가능성이 있어요' },
+      { maxMin:720,  text:'발효가 눈에 띄게 진행됐을 가능성이 있어요 (신맛·기포 증가 가능) · 가능하면 냉장 보관 권장' },
+      { maxMin:Infinity, text:'장시간 상온 노출 · 발효가 꽤 진행돼 산미가 강해지고 물러졌을 가능성이 있어요 · 위생상 빨리 냉장고에 넣는 걸 권장 (참고: 이건 이미 익은 김치를 잠깐 꺼낸 상황에 대한 정밀 연구는 없고, 발효 원리를 바탕으로 한 일반적 추정이에요)' },
     ]
   },
   {
@@ -404,7 +404,7 @@ const ITEMS = [
       { maxMin:360,  text:'저항성 전분 형성 시작 단계 · 아직 큰 변화는 없어요' },
       { maxMin:720,  text:'저항성 전분이 활발히 형성되는 중 · 증가량의 대부분이 이 구간에서 만들어져요' },
       { maxMin:1440, text:'저항성 전분 계속 증가 중 (연구 기준 24시간에 생쌀 대비 최대 2.5배 보고)' },
-      { maxMin:Infinity, text:'저항성 전분 형성이 거의 최대치에 도달했어요 (연구에서 확인된 정점 구간)' },
+      { maxMin:Infinity, text:'연구에서 확인된 최고 구간(24시간)을 넘었어요 · 그 이후에도 계속 늘어나는지는 명확한 연구 데이터가 부족해요' },
     ]
   },
 ];
@@ -641,7 +641,18 @@ function renderItem(key){
     clocksub.textContent = it.idleSub;
     btn.className = 'item-btn start ' + key;
     btn.textContent = it.verbStart;
-    insightBox.classList.remove('show');
+
+    // 마지막으로 끝난 기록이 있으면, 그때 도달한 단계를 참고용으로 보여줌
+    const finished = HISTORY[key].filter(e=>e.end);
+    if(finished.length > 0){
+      const last = finished.reduce((a,b)=> new Date(a.end) > new Date(b.end) ? a : b);
+      const durMin = (new Date(last.end) - new Date(last.start)) / 60000;
+      const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
+      insightText.textContent = `지난번 보관(${fmtDurationShort(durMin*60000)}) 기준: ${stage.text}`;
+      insightBox.classList.add('show');
+    } else {
+      insightBox.classList.remove('show');
+    }
   }
 
   renderHistory(key);
