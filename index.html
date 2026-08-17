@@ -401,10 +401,10 @@ const ITEMS = [
     histStartTag:'넣음', histEndTag:'꺼냄',
     insightIcon:'🌾', insightTitle:'저항성 전분 형성 참고 (추정)',
     insightStages:[
-      { maxMin:360,  text:'저항성 전분 형성 시작 단계 · 아직 큰 변화는 없어요' },
-      { maxMin:720,  text:'저항성 전분이 활발히 형성되는 중 · 증가량의 대부분이 이 구간에서 만들어져요' },
-      { maxMin:1440, text:'저항성 전분 계속 증가 중 (연구 기준 24시간에 생쌀 대비 최대 2.5배 보고)' },
-      { maxMin:Infinity, text:'연구에서 확인된 최고 구간(24시간)을 넘었어요 · 그 이후에도 계속 늘어나는지는 명확한 연구 데이터가 부족해요' },
+      { maxMin:360,  text:'약 1배 (거의 변화 없음) · 형성 시작 단계' },
+      { maxMin:720,  text:'약 1.5~2배 형성 추정 · 증가량의 대부분이 이 구간에서 만들어져요' },
+      { maxMin:1440, text:'약 2~2.5배 형성 추정 (연구 기준 24시간에 최대 2.5배 보고)' },
+      { maxMin:Infinity, text:'약 2.5배 이상 형성 추정 · 연구에서 확인된 최고 구간(24시간)을 넘었어요, 그 이상은 데이터 부족' },
     ]
   },
 ];
@@ -642,13 +642,15 @@ function renderItem(key){
     btn.className = 'item-btn start ' + key;
     btn.textContent = it.verbStart;
 
-    // 마지막으로 끝난 기록이 있으면, 그때 도달한 단계를 참고용으로 보여줌
+    // 마지막으로 끝난 기록이 있으면, 정확한 날짜·시간 범위와 그때 도달한 단계를 참고용으로 보여줌
     const finished = HISTORY[key].filter(e=>e.end);
     if(finished.length > 0){
       const last = finished.reduce((a,b)=> new Date(a.end) > new Date(b.end) ? a : b);
-      const durMin = (new Date(last.end) - new Date(last.start)) / 60000;
+      const lastStartD = new Date(last.start);
+      const lastEndD = new Date(last.end);
+      const durMin = (lastEndD - lastStartD) / 60000;
       const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
-      insightText.textContent = `지난번 보관(${fmtDurationShort(durMin*60000)}) 기준: ${stage.text}`;
+      insightText.textContent = `${fmtDate(lastStartD)} ~ ${fmtDate(lastEndD)} (${fmtDurationShort(durMin*60000)}): ${stage.text}`;
       insightBox.classList.add('show');
     } else {
       insightBox.classList.remove('show');
