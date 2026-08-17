@@ -123,6 +123,12 @@
   .clock-sub.editable{ cursor:pointer; border-bottom:1px dotted var(--ink-dim); display:inline-block; padding-bottom:1px; font-weight:600; }
   .clock-sub.editable:hover{ color:var(--kimchi-1); border-color:var(--kimchi-1); }
 
+  .insight-box{ margin-top:12px; border-radius:14px; padding:12px 14px; background:var(--overlay-1); border:1px solid var(--panel-line); display:none; }
+  .insight-box.show{ display:block; }
+  .insight-title{ font-size:0.72rem; font-weight:800; color:var(--ink-soft); margin-bottom:4px; display:flex; align-items:center; gap:5px; }
+  .insight-text{ font-size:0.82rem; font-weight:600; color:var(--ink); line-height:1.5; }
+  .insight-disclaimer{ font-size:0.64rem; color:var(--ink-dim); margin-top:6px; line-height:1.4; }
+
   .item-btn{ width:100%; margin-top:14px; border:none; border-radius:14px; padding:14px; font-weight:800; font-size:0.95rem; cursor:pointer; color:#fff; transition:transform .08s ease; }
   .item-btn:active{ transform:scale(0.98); }
   .item-btn.start.kimchi{ background:linear-gradient(135deg, var(--kimchi-1), var(--kimchi-2)); }
@@ -375,7 +381,14 @@ const ITEMS = [
     startedSuffix:'꺼냄',
     idleLabel:'김치 보관 중 (냉장고)',
     idleSub:'아직 꺼내지 않았어요',
-    histStartTag:'꺼냄', histEndTag:'넣음'
+    histStartTag:'꺼냄', histEndTag:'넣음',
+    insightIcon:'🦠', insightTitle:'발효 진행 참고 (추정)',
+    insightStages:[
+      { maxMin:120,  text:'짧은 노출 · 유산균 증식에 거의 영향 없어요' },
+      { maxMin:360,  text:'온도가 높으면 발효가 조금씩 더 진행될 수 있어요' },
+      { maxMin:720,  text:'발효가 눈에 띄게 진행될 수 있어요 (신맛·기포 증가 가능) · 가능하면 냉장 보관 권장' },
+      { maxMin:Infinity, text:'장시간 상온 노출 · 발효가 상당히 진행돼 산미가 강해지고 물러질 수 있어요 · 위생상 빨리 냉장고에 넣는 걸 권장' },
+    ]
   },
   {
     key:'rice', label:'밥', emoji:'🍚',
@@ -385,7 +398,14 @@ const ITEMS = [
     startedSuffix:'넣음',
     idleLabel:'밥 냉장 보관 중 아님',
     idleSub:'아직 냉장고에 넣지 않았어요',
-    histStartTag:'넣음', histEndTag:'꺼냄'
+    histStartTag:'넣음', histEndTag:'꺼냄',
+    insightIcon:'🌾', insightTitle:'저항성 전분 형성 참고 (추정)',
+    insightStages:[
+      { maxMin:360,  text:'저항성 전분 형성 시작 단계 · 아직 큰 변화는 없어요' },
+      { maxMin:720,  text:'저항성 전분이 활발히 형성되는 중 · 증가량의 대부분이 이 구간에서 만들어져요' },
+      { maxMin:1440, text:'저항성 전분 계속 증가 중 (연구 기준 24시간에 생쌀 대비 최대 2.5배 보고)' },
+      { maxMin:Infinity, text:'저항성 전분 형성이 거의 최대치에 도달했어요 (연구에서 확인된 정점 구간)' },
+    ]
   },
 ];
 
@@ -456,6 +476,11 @@ function buildItemCards(){
       <div class="clock-sub" id="clocksub-${it.key}"></div>
     </div>
     <button class="item-btn" id="btn-${it.key}"></button>
+    <div class="insight-box" id="insight-${it.key}">
+      <div class="insight-title">${it.insightIcon} ${it.insightTitle}</div>
+      <div class="insight-text" id="insighttext-${it.key}"></div>
+      <div class="insight-disclaimer">참고용 대략적 추정치예요. 온도·염도·재료·냉장고 상태에 따라 실제와 다를 수 있고, 정밀 측정값이 아니에요.</div>
+    </div>
     <div class="history-toggle" id="histtoggle-${it.key}">지난 기록 보기 ▾</div>
     <div class="history-list" id="histlist-${it.key}"></div>
   `;
@@ -591,6 +616,8 @@ function renderItem(key){
   const clock = document.getElementById('clock-'+key);
   const clocksub = document.getElementById('clocksub-'+key);
   const btn = document.getElementById('btn-'+key);
+  const insightBox = document.getElementById('insight-'+key);
+  const insightText = document.getElementById('insighttext-'+key);
 
   statusBox.classList.remove('active','kimchi','rice');
   if(active){
@@ -603,12 +630,18 @@ function renderItem(key){
     document.getElementById('clocksubedit-'+key).addEventListener('click', ()=> editActiveStart(key));
     btn.className = 'item-btn stop';
     btn.textContent = it.verbEnd;
+
+    const elapsedMin = elapsedMs / 60000;
+    const stage = it.insightStages.find(s => elapsedMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
+    insightText.textContent = stage.text;
+    insightBox.classList.add('show');
   } else {
     label.textContent = it.idleLabel;
     clock.textContent = '--:--:--';
     clocksub.textContent = it.idleSub;
     btn.className = 'item-btn start ' + key;
     btn.textContent = it.verbStart;
+    insightBox.classList.remove('show');
   }
 
   renderHistory(key);
