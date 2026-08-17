@@ -150,7 +150,7 @@
   .history-list{ display:none; flex-direction:column; gap:6px; margin-top:10px; max-height:220px; overflow-y:auto; }
   .history-list.open{ display:flex; }
   .history-empty{ text-align:center; font-size:0.75rem; color:var(--ink-dim); padding:10px 0; }
-  .hist-row{ display:flex; align-items:center; justify-content:space-between; background:var(--overlay-1); border-radius:10px; padding:8px 10px; font-size:0.74rem; gap:6px; }
+  .hist-row{ display:flex; align-items:center; justify-content:space-between; background:var(--overlay-1); border-radius:10px; padding:8px 10px; font-size:0.74rem; gap:6px; cursor:pointer; }
   .hist-times{ display:flex; flex-direction:column; gap:2px; color:var(--ink); }
   .hist-times .t-line{ display:flex; gap:6px; align-items:center; }
   .hist-times .t-tag{ font-size:0.62rem; font-weight:800; color:var(--ink-dim); width:28px; }
@@ -160,6 +160,12 @@
   .hist-dur.over{ color:var(--warn-text); }
   .hist-del{ background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.85rem; padding:2px 4px; }
   .time-edit-input{ font-size:0.72rem; font-family:inherit; color:var(--ink); background:var(--overlay-input); border:1px solid var(--kimchi-1); border-radius:6px; padding:1px 4px; width:112px; }
+  .hist-expand{ background:var(--overlay-2); border-radius:0 0 10px 10px; margin-top:-6px; padding:10px 12px 10px; text-align:center; }
+  .hist-expand .hist-big{ font-size:1.15rem; font-weight:900; margin-bottom:2px; }
+  .hist-row.kimchi + .hist-expand .hist-big{ color:var(--kimchi-1); }
+  .hist-row.rice + .hist-expand .hist-big{ color:var(--rice-2); }
+  .hist-expand .hist-detail{ font-size:0.72rem; font-weight:600; color:var(--ink-soft); line-height:1.4; }
+  .hist-chevron{ font-size:0.6rem; color:var(--ink-dim); margin-left:4px; }
 
   .footer-actions{ display:flex; justify-content:center; margin-top:4px; }
   .link-btn{ background:none; border:none; cursor:pointer; font-size:0.72rem; color:var(--ink-dim); font-weight:600; padding:6px; }
@@ -437,6 +443,7 @@ const ITEMS = [
 
 let HISTORY = {};  // { kimchi: [ {id,start,end} ], rice: [...] }
 let historyOpen = { kimchi:false, rice:false };
+let expandedHistIds = new Set();
 let todayY, todayM, todayD;
 { const t = new Date(); todayY = t.getFullYear(); todayM = t.getMonth(); todayD = t.getDate(); }
 let calY = todayY, calM = todayM;
@@ -725,7 +732,7 @@ function renderHistory(key){
   const it = ITEMS.find(i=>i.key===key);
   entries.forEach(entry=>{
     const row = document.createElement('div');
-    row.className = 'hist-row';
+    row.className = 'hist-row ' + key;
     const startD = new Date(entry.start);
     const endD = entry.end ? new Date(entry.end) : null;
     const durMs = endD ? (endD - startD) : (Date.now() - startD);
@@ -741,16 +748,33 @@ function renderHistory(key){
         <div class="t-line"><span class="t-tag">${it.histStartTag}</span>${startHtml}</div>
         <div class="t-line"><span class="t-tag">${entry.end ? it.histEndTag : ''}</span>${endHtml}</div>
       </div>
-      <div class="hist-dur">${fmtDurationShort(durMs)}</div>
+      <div class="hist-dur">${fmtDurationShort(durMs)}<span class="hist-chevron">${expandedHistIds.has(entry.id) ? '▲' : '▾'}</span></div>
       <button class="hist-del" data-id="${entry.id}">✕</button>
     `;
 
     row.querySelectorAll('.t-val').forEach(el=>{
-      el.addEventListener('click', ()=> openTimeEditModal(key, el.dataset.id, el.dataset.field));
+      el.addEventListener('click', (ev)=>{ ev.stopPropagation(); openTimeEditModal(key, el.dataset.id, el.dataset.field); });
     });
-    row.querySelector('.hist-del').addEventListener('click', ()=> deleteEntry(key, entry.id));
+    row.querySelector('.hist-del').addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteEntry(key, entry.id); });
+    row.addEventListener('click', ()=>{
+      if(expandedHistIds.has(entry.id)) expandedHistIds.delete(entry.id);
+      else expandedHistIds.add(entry.id);
+      renderHistory(key);
+    });
 
     list.appendChild(row);
+
+    if(expandedHistIds.has(entry.id)){
+      const durMin = durMs / 60000;
+      const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
+      const panel = document.createElement('div');
+      panel.className = 'hist-expand';
+      panel.innerHTML = `
+        <div class="hist-big">${it.insightIcon} ${stage.big}</div>
+        <div class="hist-detail">${stage.detail}</div>
+      `;
+      list.appendChild(panel);
+    }
   });
 }
 
