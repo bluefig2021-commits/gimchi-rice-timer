@@ -126,11 +126,11 @@
   .insight-box{ margin-top:12px; border-radius:14px; padding:16px 16px; background:var(--overlay-1); border:1px solid var(--panel-line); display:none; text-align:center; }
   .insight-box.show{ display:block; }
   .insight-title{ font-size:0.76rem; font-weight:800; color:var(--ink-soft); margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:5px; }
-  .insight-big{ font-size:1.65rem; font-weight:900; letter-spacing:-0.01em; margin-bottom:4px; }
+  .insight-big{ font-size:1.65rem; font-weight:900; letter-spacing:-0.01em; margin-bottom:2px; }
   .insight-box.kimchi .insight-big{ color:var(--kimchi-1); }
   .insight-box.rice .insight-big{ color:var(--rice-2); }
-  .insight-detail{ font-size:0.86rem; font-weight:600; color:var(--ink); line-height:1.5; margin-bottom:6px; }
-  .insight-meta{ font-size:0.72rem; color:var(--ink-dim); margin-bottom:10px; }
+  .insight-meta{ font-size:0.95rem; font-weight:800; color:var(--ink); margin-bottom:8px; }
+  .insight-detail{ font-size:0.82rem; font-weight:600; color:var(--ink-soft); line-height:1.5; margin-bottom:10px; }
   .insight-disclaimer{ font-size:0.62rem; color:var(--ink-dim); line-height:1.4; border-top:1px solid var(--panel-line); padding-top:8px; }
 
   .item-btn{ width:100%; margin-top:14px; border:none; border-radius:14px; padding:14px; font-weight:800; font-size:0.95rem; cursor:pointer; color:#fff; transition:transform .08s ease; }
@@ -483,8 +483,8 @@ function buildItemCards(){
     <div class="insight-box ${it.key}" id="insight-${it.key}">
       <div class="insight-title">${it.insightIcon} ${it.insightHeading}</div>
       <div class="insight-big" id="insightbig-${it.key}"></div>
-      <div class="insight-detail" id="insightdetail-${it.key}"></div>
       <div class="insight-meta" id="insightmeta-${it.key}"></div>
+      <div class="insight-detail" id="insightdetail-${it.key}"></div>
       <div class="insight-disclaimer">참고용 대략적 추정치예요. 온도·염도·재료·냉장고 상태에 따라 실제와 다를 수 있고, 정밀 측정값이 아니에요.</div>
     </div>
     <div class="history-toggle" id="histtoggle-${it.key}">지난 기록 보기 ▾</div>
@@ -642,8 +642,8 @@ function renderItem(key){
     const elapsedMin = elapsedMs / 60000;
     const stage = it.insightStages.find(s => elapsedMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
     insightBig.textContent = stage.big;
+    insightMeta.textContent = `지금까지 ${fmtDurationShort(elapsedMs)} · 진행 중`;
     insightDetail.textContent = stage.detail;
-    insightMeta.textContent = '지금 진행 중';
     insightBox.classList.add('show');
   } else {
     label.textContent = it.idleLabel;
@@ -661,8 +661,8 @@ function renderItem(key){
       const durMin = (lastEndD - lastStartD) / 60000;
       const stage = it.insightStages.find(s => durMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
       insightBig.textContent = stage.big;
-      insightDetail.textContent = stage.detail;
       insightMeta.textContent = `${fmtDate(lastStartD)} ~ ${fmtDate(lastEndD)} (${fmtDurationShort(durMin*60000)})`;
+      insightDetail.textContent = stage.detail;
       insightBox.classList.add('show');
     } else {
       insightBox.classList.remove('show');
