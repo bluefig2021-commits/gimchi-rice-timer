@@ -124,9 +124,12 @@
   .active-card{ border-radius:16px; padding:16px; text-align:center; background:var(--overlay-1); position:relative; }
   .active-card.kimchi{ background:linear-gradient(160deg, rgba(194,59,46,0.10), rgba(194,59,46,0.03)); }
   .active-card.rice{ background:linear-gradient(160deg, rgba(201,151,58,0.12), rgba(201,151,58,0.03)); }
-  .label-badge{ display:inline-block; font-size:0.68rem; font-weight:800; padding:4px 11px; border-radius:999px; margin-bottom:8px; background:var(--overlay-2); color:var(--ink-soft); cursor:pointer; border:1px dashed var(--panel-line); }
+  .label-badge{ display:inline-block; font-size:1rem; font-weight:900; padding:6px 14px; border-radius:999px; margin-bottom:10px; background:var(--overlay-2); color:var(--ink); cursor:pointer; border:1px dashed var(--panel-line); }
   .label-badge:hover{ color:var(--kimchi-1); border-color:var(--kimchi-1); }
-  .mini-insight{ font-size:0.76rem; font-weight:700; color:var(--ink-soft); margin-top:8px; line-height:1.4; }
+  .mini-insight-big{ font-size:1.65rem; font-weight:900; margin-top:10px; letter-spacing:-0.01em; }
+  .active-card.kimchi .mini-insight-big{ color:var(--kimchi-1); }
+  .active-card.rice .mini-insight-big{ color:var(--rice-2); }
+  .mini-insight{ font-size:0.82rem; font-weight:600; color:var(--ink-soft); margin-top:4px; line-height:1.4; }
   .end-btn{ width:100%; margin-top:12px; border-radius:12px; padding:11px; font-weight:800; font-size:0.85rem; cursor:pointer; background:var(--overlay-2); color:var(--ink); border:1px solid var(--panel-line); }
   .hist-label{ font-size:0.66rem; font-weight:800; color:var(--ink-soft); margin-bottom:3px; }
 
@@ -182,7 +185,7 @@
   .modal-field label{ display:block; font-size:0.72rem; font-weight:700; color:var(--ink-soft); margin-bottom:5px; }
   .modal-field input{ width:100%; border:1px solid var(--panel-line); border-radius:12px; padding:11px 12px; font-size:1rem; background:var(--overlay-input); color:var(--ink); text-align:center; font-variant-numeric:tabular-nums; }
   .modal-preset-row{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 16px; }
-  .modal-preset{ border:1px solid var(--panel-line); background:var(--overlay-1); color:var(--ink-soft); border-radius:999px; padding:6px 12px; font-size:0.74rem; font-weight:700; cursor:pointer; }
+  .modal-preset{ border:1px solid var(--panel-line); background:var(--overlay-1); color:var(--ink-soft); border-radius:999px; padding:9px 16px; font-size:0.92rem; font-weight:800; cursor:pointer; }
   .modal-preset.selected{ background:var(--kimchi-1); border-color:var(--kimchi-1); color:#fff; }
   .modal-btns{ display:flex; gap:8px; }
   .modal-btns button{ flex:1; border:none; border-radius:12px; padding:12px; font-weight:800; font-size:0.85rem; cursor:pointer; }
@@ -670,7 +673,8 @@ function renderItem(key){
         <div class="status-label">${it.activeLabel}</div>
         <div class="clock-big">${fmtClock(totalSec)}</div>
         <div class="clock-sub editable" data-id="${entry.id}">✏️ ${fmtDate(new Date(entry.start))}에 ${it.startedSuffix} · 시간 수정</div>
-        <div class="mini-insight">${it.insightIcon} ${stage.big} · ${stage.detail}</div>
+        <div class="mini-insight-big">${it.insightIcon} ${stage.big}</div>
+        <div class="mini-insight">${stage.detail}</div>
         <button class="end-btn" data-id="${entry.id}">${it.verbEnd}</button>
       `;
       card.querySelector('.clock-sub').addEventListener('click', ()=> openTimeEditModal(key, entry.id, 'start'));
@@ -711,23 +715,23 @@ function updateInsightBox(key){
 function renderHistory(key){
   const toggle = document.getElementById('histtoggle-'+key);
   const list = document.getElementById('histlist-'+key);
-  toggle.textContent = historyOpen[key] ? '지난 기록 접기 ▴' : '지난 기록 보기 ▾';
+  const toggleLabel = filterDate ? '선택한 날짜 기록' : '오늘 기록';
+  toggle.textContent = historyOpen[key] ? `${toggleLabel} 접기 ▴` : `${toggleLabel} 보기 ▾`;
   list.classList.toggle('open', historyOpen[key]);
   if(!historyOpen[key]) return;
 
   list.innerHTML = '';
   let entries = [...HISTORY[key]];
-  if(filterDate){
-    entries = entries.filter(e=>{
-      const d = new Date(e.start);
-      return d.getFullYear()===filterDate.y && d.getMonth()===filterDate.m && d.getDate()===filterDate.d;
-    });
-  }
+  const target = filterDate || { y: todayY, m: todayM, d: todayD };
+  entries = entries.filter(e=>{
+    const d = new Date(e.start);
+    return d.getFullYear()===target.y && d.getMonth()===target.m && d.getDate()===target.d;
+  });
   entries.sort((a,b)=> new Date(b.start) - new Date(a.start));
   if(entries.length === 0){
     const e = document.createElement('div');
     e.className = 'history-empty';
-    e.textContent = filterDate ? '이 날은 기록이 없어요' : '아직 기록이 없어요';
+    e.textContent = filterDate ? '이 날은 기록이 없어요' : '오늘은 아직 기록이 없어요';
     list.appendChild(e);
     return;
   }
