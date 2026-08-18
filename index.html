@@ -413,10 +413,10 @@ const ITEMS = [
     histStartTag:'꺼냄', histEndTag:'넣음',
     insightIcon:'🦠', insightHeading:'발효 진행 (추정)',
     insightStages:[
-      { maxMin:120,  big:'영향 적음', detail:'짧은 노출 · 유산균 증식에 거의 영향 없을 것으로 보여요' },
-      { maxMin:360,  big:'조금 진행', detail:'온도가 높으면 발효가 조금씩 진행됐을 가능성이 있어요' },
-      { maxMin:720,  big:'꽤 진행', detail:'신맛·기포 증가 가능 · 가능하면 냉장 보관 권장' },
-      { maxMin:Infinity, big:'많이 진행', detail:'산미가 강해지고 물러졌을 가능성 · 위생상 빨리 냉장고에 넣는 걸 권장' },
+      { maxMin:120,  big:'영향 적음', detail:'짧게 나와 있었어요, 유산균엔 거의 영향 없을 거예요' },
+      { maxMin:360,  big:'조금 진행', detail:'따뜻했다면 발효가 살짝 더 진행됐을 수도 있어요' },
+      { maxMin:720,  big:'꽤 진행', detail:'신맛이나 기포가 늘었을 수 있어요, 슬슬 냉장고로!' },
+      { maxMin:Infinity, big:'많이 진행', detail:'발효가 꽤 진행됐을 거예요, 얼른 냉장고에 넣어주세요!' },
     ]
   },
   {
@@ -430,10 +430,10 @@ const ITEMS = [
     histStartTag:'넣음', histEndTag:'꺼냄',
     insightIcon:'🌾', insightHeading:'저항성 전분 형성 (추정)',
     insightStages:[
-      { maxMin:360,  big:'약 1배', detail:'형성 시작 단계 · 거의 변화 없음' },
-      { maxMin:720,  big:'약 1.5배', detail:'증가량의 대부분이 이 구간에서 만들어져요' },
-      { maxMin:1440, big:'약 2배', detail:'계속 증가 중 (연구 기준 24시간에 최대 2.5배 보고)' },
-      { maxMin:Infinity, big:'약 2.5배', detail:'연구에서 확인된 최고 구간(24시간) · 그 이상은 데이터 부족' },
+      { maxMin:360,  big:'약 1배', detail:'아직 형성 시작 단계예요, 큰 변화는 없어요' },
+      { maxMin:720,  big:'약 1.5배', detail:'지금 활발하게 만들어지고 있어요!' },
+      { maxMin:1440, big:'약 2배', detail:'저항성 전분이 잘 쌓이고 있어요! (24시간엔 최대 2.5배까지도 나와요)' },
+      { maxMin:Infinity, big:'약 2.5배', detail:'저항성 전분 최고 구간이에요! 그 이후는 아직 알려진 게 많지 않아요' },
     ]
   },
 ];
@@ -779,7 +779,7 @@ let startModalCtx = null; // { mode:'new'|'editLabel', key, id? }
 function buildPresetRow(key){
   const row = document.getElementById('startPresetRow');
   row.innerHTML = '';
-  const presets = key==='rice' ? ['아침','점심','저녁','야식'] : ['평소','손님용','도시락용'];
+  const presets = key==='rice' ? ['아침','점심','저녁','야식'] : ['배추김치','열무김치','갓김치','깍두기'];
   presets.forEach(p=>{
     const chip = document.createElement('button');
     chip.type = 'button';
