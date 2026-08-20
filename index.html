@@ -315,6 +315,29 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="manualAddModalOverlay" onclick="if(event.target===this) closeManualAddModal()">
+  <div class="modal-card">
+    <div class="modal-title" id="manualAddModalTitle">🆕 기록 추가</div>
+    <div class="modal-field" style="margin-bottom:12px;">
+      <label>라벨 (선택)</label>
+      <input type="text" id="manualLabelInput" placeholder="비워두면 라벨 없이 저장돼요">
+    </div>
+    <div class="modal-preset-row" id="manualPresetRow"></div>
+    <div class="modal-field" style="margin-bottom:12px;">
+      <label id="manualStartLabel">시작 시각</label>
+      <input type="datetime-local" id="manualStartInput">
+    </div>
+    <div class="modal-field" style="margin-bottom:16px;">
+      <label id="manualEndLabel">종료 시각 (비워두면 진행 중으로 저장)</label>
+      <input type="datetime-local" id="manualEndInput">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeManualAddModal()">취소</button>
+      <button class="modal-save" onclick="confirmManualAddModal()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -660,15 +683,18 @@ function renderItem(key){
   listEl.innerHTML = '';
 
   if(filterDate){
-    // 과거(혹은 다른) 날짜를 조회 중일 땐 "지금 진행 중"인 정보를 보여주지 않음
+    // 과거(혹은 다른) 날짜를 조회 중일 땐 "지금 진행 중"인 정보 대신, 그 날짜에 기록을 추가/수정할 수 있게 함
     addBtn.style.display = 'none';
     const notice = document.createElement('div');
     notice.className = 'active-empty';
+    const dateLabel = `${filterDate.y}.${pad2(filterDate.m+1)}.${pad2(filterDate.d)}`;
     notice.innerHTML = `
-      <div class="status-label">📅 선택한 날짜의 기록을 보는 중이에요</div>
+      <div class="status-label">📅 ${dateLabel} 기록을 보는 중이에요</div>
       <div class="clock-sub">지금 진행 중인 기록은 "전체보기"를 누르면 다시 보여요</div>
+      <button class="item-btn start ${key}" id="manualaddbtn-${key}" style="margin-top:14px;">+ 이 날짜에 기록 추가</button>
     `;
     listEl.appendChild(notice);
+    document.getElementById('manualaddbtn-'+key).addEventListener('click', ()=> openManualAddModal(key));
   } else {
     addBtn.style.display = '';
     const actives = activeEntries(key);
@@ -868,6 +894,69 @@ function endEntry(key, id){
     renderCalendar();
   });
 }
+
+/* ---- 지난 날짜에 기록 직접 추가 ---- */
+function openManualAddModal(key){
+  if(!filterDate) return;
+  const it = ITEMS.find(i=>i.key===key);
+  document.getElementById('manualAddModalTitle').textContent = `${it.emoji} ${filterDate.y}.${pad2(filterDate.m+1)}.${pad2(filterDate.d)}에 기록 추가`;
+  document.getElementById('manualStartLabel').textContent = `${it.histStartTag} 시각`;
+  document.getElementById('manualEndLabel').textContent = `${it.histEndTag} 시각 (비워두면 진행 중으로 저장)`;
+  document.getElementById('manualLabelInput').value = '';
+  const pad = n => String(n).padStart(2,'0');
+  const dateStr = `${filterDate.y}-${pad(filterDate.m+1)}-${pad(filterDate.d)}`;
+  document.getElementById('manualStartInput').value = `${dateStr}T09:00`;
+  document.getElementById('manualEndInput').value = `${dateStr}T18:00`;
+
+  const row = document.getElementById('manualPresetRow');
+  row.innerHTML = '';
+  const presets = key==='rice' ? ['아침','점심','저녁','야식'] : ['배추김치','열무김치','갓김치','깍두기'];
+  presets.forEach(p=>{
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'modal-preset';
+    chip.textContent = p;
+    chip.onclick = ()=>{ document.getElementById('manualLabelInput').value = p; };
+    row.appendChild(chip);
+  });
+
+  manualAddKey = key;
+  document.getElementById('manualAddModalOverlay').classList.add('active');
+}
+let manualAddKey = null;
+function closeManualAddModal(){
+  document.getElementById('manualAddModalOverlay').classList.remove('active');
+  manualAddKey = null;
+}
+function confirmManualAddModal(){
+  if(!manualAddKey) return;
+  const key = manualAddKey;
+  const label = document.getElementById('manualLabelInput').value.trim();
+  const startVal = document.getElementById('manualStartInput').value;
+  const endVal = document.getElementById('manualEndInput').value;
+  if(!startVal){ alert('시작 시각을 입력해 주세요.'); return; }
+  const startD = new Date(startVal);
+  if(isNaN(startD.getTime())){ alert('올바른 시작 시각이 아니에요.'); return; }
+  let endD = null;
+  if(endVal){
+    endD = new Date(endVal);
+    if(isNaN(endD.getTime())){ alert('올바른 종료 시각이 아니에요.'); return; }
+    if(endD <= startD){ alert('종료 시각이 시작 시각보다 빠를 수 없어요.'); return; }
+  }
+  return serialize(async ()=>{
+    HISTORY[key].push({
+      id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
+      start: startD.toISOString(),
+      end: endD ? endD.toISOString() : null,
+      label
+    });
+    await saveHistory(key);
+    closeManualAddModal();
+    renderItem(key);
+    renderCalendar();
+  });
+}
+
 function openTimeEditModal(key, id, field){
   const entry = HISTORY[key].find(e=>e.id===id);
   if(!entry) return;
