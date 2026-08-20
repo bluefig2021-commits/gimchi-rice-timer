@@ -689,9 +689,8 @@ function renderItem(key){
     notice.className = 'active-empty';
     const dateLabel = `${filterDate.y}.${pad2(filterDate.m+1)}.${pad2(filterDate.d)}`;
     notice.innerHTML = `
-      <div class="status-label">📅 ${dateLabel} 기록을 보는 중이에요</div>
-      <div class="clock-sub">지금 진행 중인 기록은 "전체보기"를 누르면 다시 보여요</div>
-      <button class="item-btn start ${key}" id="manualaddbtn-${key}" style="margin-top:14px;">+ 이 날짜에 기록 추가</button>
+      <div class="status-label">📅 ${dateLabel}</div>
+      <button class="item-btn start ${key}" id="manualaddbtn-${key}" style="margin-top:10px;">+ 이 날짜에 기록 추가</button>
     `;
     listEl.appendChild(notice);
     document.getElementById('manualaddbtn-'+key).addEventListener('click', ()=> openManualAddModal(key));
@@ -766,10 +765,17 @@ function updateInsightBox(key){
 function renderHistory(key){
   const toggle = document.getElementById('histtoggle-'+key);
   const list = document.getElementById('histlist-'+key);
-  const toggleLabel = filterDate ? '선택한 날짜 기록' : '지난 기록';
-  toggle.textContent = historyOpen[key] ? `${toggleLabel} 접기 ▴` : `${toggleLabel} 보기 ▾`;
-  list.classList.toggle('open', historyOpen[key]);
-  if(!historyOpen[key]) return;
+
+  if(filterDate){
+    // 날짜를 골랐을 땐 토글 없이 바로 그 날짜 기록을 보여줌
+    toggle.style.display = 'none';
+    list.classList.add('open');
+  } else {
+    toggle.style.display = '';
+    toggle.textContent = historyOpen[key] ? '지난 기록 접기 ▴' : '지난 기록 보기 ▾';
+    list.classList.toggle('open', historyOpen[key]);
+    if(!historyOpen[key]) return;
+  }
 
   list.innerHTML = '';
   let entries = [...HISTORY[key]];
