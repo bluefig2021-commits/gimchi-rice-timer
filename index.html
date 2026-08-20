@@ -550,9 +550,13 @@ function switchTab(key){
 }
 
 function dayKeyStr(y,m,d){ return `${y}-${m}-${d}`; }
-// 기록이 "속한" 날짜: 끝난 기록은 끝난 날(=꺼낸/먹은 날) 기준, 아직 진행 중이면 시작일 기준
+// 기록이 "속한" 날짜: 끝난 기록은 끝난 날(=꺼낸/먹은 날) 기준.
+// 아직 진행 중이면 "오늘 넣은 건 내일 먹는다"는 원칙에 따라 무조건 시작일+1일(다음날) 기준.
 function entryDate(entry){
-  return entry.end ? new Date(entry.end) : new Date(entry.start);
+  if(entry.end) return new Date(entry.end);
+  const d = new Date(entry.start);
+  d.setDate(d.getDate() + 1);
+  return d;
 }
 
 function renderCalendar(){
