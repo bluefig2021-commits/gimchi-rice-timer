@@ -550,6 +550,10 @@ function switchTab(key){
 }
 
 function dayKeyStr(y,m,d){ return `${y}-${m}-${d}`; }
+// 기록이 "속한" 날짜: 끝난 기록은 끝난 날(=꺼낸/먹은 날) 기준, 아직 진행 중이면 시작일 기준
+function entryDate(entry){
+  return entry.end ? new Date(entry.end) : new Date(entry.start);
+}
 
 function renderCalendar(){
   const it = ITEMS.find(i=>i.key===activeTab);
@@ -564,10 +568,10 @@ function renderCalendar(){
     dowRow.dataset.done = '1';
   }
 
-  // 이 달에 현재 탭 품목의 기록이 있는 날짜 집계 (세션 시작일 기준)
+  // 이 달에 현재 탭 품목의 기록이 있는 날짜 집계 (끝난 날짜 기준, 진행 중이면 시작일 기준)
   const dayHas = {}; // 'y-m-d' -> true
   HISTORY[activeTab].forEach(entry=>{
-    const d = new Date(entry.start);
+    const d = entryDate(entry);
     if(d.getFullYear()===calY && d.getMonth()===calM){
       dayHas[dayKeyStr(d.getFullYear(), d.getMonth(), d.getDate())] = true;
     }
@@ -738,9 +742,9 @@ function renderHistory(key){
   list.innerHTML = '';
   let entries = [...HISTORY[key]];
   if(filterDate){
-    // 달력에서 특정 날짜를 골랐을 때만 그 날짜로 필터링 (자정을 넘긴 기록은 시작일 기준)
+    // 달력에서 특정 날짜를 골랐을 때만 그 날짜로 필터링 (끝난 날짜 기준, 진행 중이면 시작일 기준)
     entries = entries.filter(e=>{
-      const d = new Date(e.start);
+      const d = entryDate(e);
       return d.getFullYear()===filterDate.y && d.getMonth()===filterDate.m && d.getDate()===filterDate.d;
     });
   }
