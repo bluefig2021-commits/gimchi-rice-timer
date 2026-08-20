@@ -645,43 +645,58 @@ function renderItem(key){
   const listEl = document.getElementById('activelist-'+key);
   if(!listEl) return; // 현재 활성 탭이 아니면 DOM이 없음
   const it = ITEMS.find(i=>i.key===key);
-  const actives = activeEntries(key);
+  const addBtn = document.getElementById('addbtn-'+key);
 
   listEl.innerHTML = '';
-  if(actives.length === 0){
-    const empty = document.createElement('div');
-    empty.className = 'active-empty';
-    empty.innerHTML = `
-      <div class="status-label">${it.idleLabel}</div>
-      <div class="clock-big">--:--:--</div>
-      <div class="clock-sub">${it.idleSub}</div>
+
+  if(filterDate){
+    // 과거(혹은 다른) 날짜를 조회 중일 땐 "지금 진행 중"인 정보를 보여주지 않음
+    addBtn.style.display = 'none';
+    const notice = document.createElement('div');
+    notice.className = 'active-empty';
+    notice.innerHTML = `
+      <div class="status-label">📅 선택한 날짜의 기록을 보는 중이에요</div>
+      <div class="clock-sub">지금 진행 중인 기록은 "전체보기"를 누르면 다시 보여요</div>
     `;
-    listEl.appendChild(empty);
+    listEl.appendChild(notice);
   } else {
-    actives.forEach(entry=>{
-      const card = document.createElement('div');
-      card.className = 'active-card ' + key;
-      const elapsedMs = Date.now() - new Date(entry.start).getTime();
-      const totalSec = Math.max(Math.floor(elapsedMs/1000),0);
-      const elapsedMin = elapsedMs/60000;
-      const stage = it.insightStages.find(s => elapsedMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
-      const labelHtml = entry.label
-        ? `🏷️ ${escapeHtml(entry.label)} · 수정`
-        : `+ 라벨 추가`;
-      card.innerHTML = `
-        <div class="label-badge" data-id="${entry.id}">${labelHtml}</div>
-        <div class="status-label">${it.activeLabel}</div>
-        <div class="clock-big">${fmtClock(totalSec)}</div>
-        <div class="clock-sub editable" data-id="${entry.id}">✏️ ${fmtDate(new Date(entry.start))}에 ${it.startedSuffix} · 시간 수정</div>
-        <div class="mini-insight-big">${it.insightIcon} ${stage.big}</div>
-        <div class="mini-insight">${stage.detail}</div>
-        <button class="end-btn" data-id="${entry.id}">${it.verbEnd}</button>
+    addBtn.style.display = '';
+    const actives = activeEntries(key);
+    if(actives.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'active-empty';
+      empty.innerHTML = `
+        <div class="status-label">${it.idleLabel}</div>
+        <div class="clock-big">--:--:--</div>
+        <div class="clock-sub">${it.idleSub}</div>
       `;
-      card.querySelector('.clock-sub').addEventListener('click', ()=> openTimeEditModal(key, entry.id, 'start'));
-      card.querySelector('.label-badge').addEventListener('click', ()=> openLabelEditModal(key, entry.id));
-      card.querySelector('.end-btn').addEventListener('click', ()=> endEntry(key, entry.id));
-      listEl.appendChild(card);
-    });
+      listEl.appendChild(empty);
+    } else {
+      actives.forEach(entry=>{
+        const card = document.createElement('div');
+        card.className = 'active-card ' + key;
+        const elapsedMs = Date.now() - new Date(entry.start).getTime();
+        const totalSec = Math.max(Math.floor(elapsedMs/1000),0);
+        const elapsedMin = elapsedMs/60000;
+        const stage = it.insightStages.find(s => elapsedMin < s.maxMin) || it.insightStages[it.insightStages.length-1];
+        const labelHtml = entry.label
+          ? `🏷️ ${escapeHtml(entry.label)} · 수정`
+          : `+ 라벨 추가`;
+        card.innerHTML = `
+          <div class="label-badge" data-id="${entry.id}">${labelHtml}</div>
+          <div class="status-label">${it.activeLabel}</div>
+          <div class="clock-big">${fmtClock(totalSec)}</div>
+          <div class="clock-sub editable" data-id="${entry.id}">✏️ ${fmtDate(new Date(entry.start))}에 ${it.startedSuffix} · 시간 수정</div>
+          <div class="mini-insight-big">${it.insightIcon} ${stage.big}</div>
+          <div class="mini-insight">${stage.detail}</div>
+          <button class="end-btn" data-id="${entry.id}">${it.verbEnd}</button>
+        `;
+        card.querySelector('.clock-sub').addEventListener('click', ()=> openTimeEditModal(key, entry.id, 'start'));
+        card.querySelector('.label-badge').addEventListener('click', ()=> openLabelEditModal(key, entry.id));
+        card.querySelector('.end-btn').addEventListener('click', ()=> endEntry(key, entry.id));
+        listEl.appendChild(card);
+      });
+    }
   }
 
   // 상단 큰 인사이트 박스: 기록을 클릭하기 전엔 비어있고, 클릭한 기록의 정보로 채워짐
@@ -715,23 +730,25 @@ function updateInsightBox(key){
 function renderHistory(key){
   const toggle = document.getElementById('histtoggle-'+key);
   const list = document.getElementById('histlist-'+key);
-  const toggleLabel = filterDate ? '선택한 날짜 기록' : '오늘 기록';
+  const toggleLabel = filterDate ? '선택한 날짜 기록' : '지난 기록';
   toggle.textContent = historyOpen[key] ? `${toggleLabel} 접기 ▴` : `${toggleLabel} 보기 ▾`;
   list.classList.toggle('open', historyOpen[key]);
   if(!historyOpen[key]) return;
 
   list.innerHTML = '';
   let entries = [...HISTORY[key]];
-  const target = filterDate || { y: todayY, m: todayM, d: todayD };
-  entries = entries.filter(e=>{
-    const d = new Date(e.start);
-    return d.getFullYear()===target.y && d.getMonth()===target.m && d.getDate()===target.d;
-  });
+  if(filterDate){
+    // 달력에서 특정 날짜를 골랐을 때만 그 날짜로 필터링 (자정을 넘긴 기록은 시작일 기준)
+    entries = entries.filter(e=>{
+      const d = new Date(e.start);
+      return d.getFullYear()===filterDate.y && d.getMonth()===filterDate.m && d.getDate()===filterDate.d;
+    });
+  }
   entries.sort((a,b)=> new Date(b.start) - new Date(a.start));
   if(entries.length === 0){
     const e = document.createElement('div');
     e.className = 'history-empty';
-    e.textContent = filterDate ? '이 날은 기록이 없어요' : '오늘은 아직 기록이 없어요';
+    e.textContent = filterDate ? '이 날은 기록이 없어요' : '아직 기록이 없어요';
     list.appendChild(e);
     return;
   }
