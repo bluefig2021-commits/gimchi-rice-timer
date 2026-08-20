@@ -131,7 +131,8 @@
   .active-card.rice .mini-insight-big{ color:var(--rice-2); }
   .mini-insight{ font-size:0.82rem; font-weight:600; color:var(--ink-soft); margin-top:4px; line-height:1.4; }
   .end-btn{ width:100%; margin-top:12px; border-radius:12px; padding:11px; font-weight:800; font-size:0.85rem; cursor:pointer; background:var(--overlay-2); color:var(--ink); border:1px solid var(--panel-line); }
-  .hist-label{ font-size:0.66rem; font-weight:800; color:var(--ink-soft); margin-bottom:3px; }
+  .hist-label{ font-size:0.66rem; font-weight:800; color:var(--ink-soft); margin-bottom:3px; cursor:pointer; display:inline-block; border-bottom:1px dashed var(--ink-dim); }
+  .hist-label:hover{ color:var(--kimchi-1); border-color:var(--kimchi-1); }
 
   .insight-box{ margin-top:12px; border-radius:14px; padding:16px 16px; background:var(--overlay-1); border:1px solid var(--panel-line); display:none; text-align:center; }
   .insight-box.show{ display:block; }
@@ -545,10 +546,6 @@ function buildItemCards(){
   `;
   root.appendChild(wrap);
 
-  document.getElementById('histtoggle-'+it.key).addEventListener('click', ()=>{
-    historyOpen[it.key] = !historyOpen[it.key];
-    renderItem(it.key);
-  });
   document.getElementById('addbtn-'+it.key).addEventListener('click', ()=> openStartModal(it.key));
 
   renderItem(it.key);
@@ -766,31 +763,28 @@ function renderHistory(key){
   const toggle = document.getElementById('histtoggle-'+key);
   const list = document.getElementById('histlist-'+key);
 
-  if(filterDate){
-    // 날짜를 골랐을 땐 토글 없이 바로 그 날짜 기록을 보여줌
+  if(!filterDate){
+    // 날짜를 고르기 전엔 지난 기록 자체를 보여주지 않음
     toggle.style.display = 'none';
-    list.classList.add('open');
-  } else {
-    toggle.style.display = '';
-    toggle.textContent = historyOpen[key] ? '지난 기록 접기 ▴' : '지난 기록 보기 ▾';
-    list.classList.toggle('open', historyOpen[key]);
-    if(!historyOpen[key]) return;
+    list.classList.remove('open');
+    list.innerHTML = '';
+    return;
   }
+
+  toggle.style.display = 'none';
+  list.classList.add('open');
 
   list.innerHTML = '';
   let entries = [...HISTORY[key]];
-  if(filterDate){
-    // 달력에서 특정 날짜를 골랐을 때만 그 날짜로 필터링 (끝난 날짜 기준, 진행 중이면 시작일 기준)
-    entries = entries.filter(e=>{
-      const d = entryDate(e);
-      return d.getFullYear()===filterDate.y && d.getMonth()===filterDate.m && d.getDate()===filterDate.d;
-    });
-  }
+  entries = entries.filter(e=>{
+    const d = entryDate(e);
+    return d.getFullYear()===filterDate.y && d.getMonth()===filterDate.m && d.getDate()===filterDate.d;
+  });
   entries.sort((a,b)=> new Date(b.start) - new Date(a.start));
   if(entries.length === 0){
     const e = document.createElement('div');
     e.className = 'history-empty';
-    e.textContent = filterDate ? '이 날은 기록이 없어요' : '아직 기록이 없어요';
+    e.textContent = '이 날은 기록이 없어요';
     list.appendChild(e);
     return;
   }
@@ -809,7 +803,7 @@ function renderHistory(key){
 
     row.innerHTML = `
       <div class="hist-times">
-        ${entry.label ? `<div class="hist-label">🏷️ ${escapeHtml(entry.label)}</div>` : ''}
+        <div class="hist-label" data-id="${entry.id}">${entry.label ? `🏷️ ${escapeHtml(entry.label)}` : '+ 라벨 추가'}</div>
         <div class="t-line"><span class="t-tag">${it.histStartTag}</span>${startHtml}</div>
         <div class="t-line"><span class="t-tag">${entry.end ? it.histEndTag : ''}</span>${endHtml}</div>
       </div>
@@ -820,6 +814,7 @@ function renderHistory(key){
     row.querySelectorAll('.t-val').forEach(el=>{
       el.addEventListener('click', (ev)=>{ ev.stopPropagation(); openTimeEditModal(key, el.dataset.id, el.dataset.field); });
     });
+    row.querySelector('.hist-label').addEventListener('click', (ev)=>{ ev.stopPropagation(); openLabelEditModal(key, entry.id); });
     row.querySelector('.hist-del').addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteEntry(key, entry.id); });
     row.addEventListener('click', ()=>{
       selectedHist[key] = (selectedHist[key] === entry.id) ? null : entry.id;
