@@ -608,6 +608,7 @@ function onDayClick(y,m,d){
   }
   filterDate = { y, m, d };
   historyOpen[activeTab] = true;
+  selectedHist[activeTab] = null;
   document.getElementById('filterBannerWrap').style.display = 'block';
   document.getElementById('filterBannerText').textContent = `📅 ${y}.${pad2(m+1)}.${pad2(d)} 기록만 보는 중`;
   renderItem(activeTab);
@@ -616,6 +617,7 @@ function onDayClick(y,m,d){
 
 function clearDateFilter(){
   filterDate = null;
+  selectedHist[activeTab] = null;
   document.getElementById('filterBannerWrap').style.display = 'none';
   renderItem(activeTab);
   renderCalendar();
